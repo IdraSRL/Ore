@@ -3,6 +3,7 @@
 import { AuthService } from "../auth/auth.js";
 import { FirestoreService } from "../common/firestore-service.js";
 import { AdminService } from "../admin/common/admin-service.js";
+// ATTENZIONE: percorso corretto "time-utils.js" e tolta la funzione mai utilizzata
 import {
   calculateTotalMinutes,
   formatDecimalHours
@@ -22,7 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     userDisplay.textContent = username;
   }
 
+  // ============================================
+  // SEZIONE 1: LISTA AGGREGATA PER DATA
+  // (Attività recenti con filtro per data singola - RIMOSSA dalla tab Registrazione)
+  // ============================================
 
+  // ============================================
+  // SEZIONE 2: RIEPILOGO MENSILE
+  // (Totali, status e tabella giorno per giorno)
+  // ============================================
   const summaryContainer = document.getElementById('summaryContainer');
   const monthSelect      = document.getElementById('monthSelect');
 
@@ -207,6 +216,9 @@ ore = decHours.toLocaleString('it-IT', { minimumFractionDigits: 2 });
     summaryContainer.innerHTML = html;
   }
 
+  // ============================================
+  // SEZIONE 3: TABELLA COMPLETA ATTIVITÀ MENSILI (FULL LOG)
+  // ============================================
   const fullActivityTableBody = document.getElementById('fullActivityTableBody');
   const activityLogDateFilter = document.getElementById('activityLogDateFilter');
 
@@ -281,6 +293,11 @@ ore = decHours.toLocaleString('it-IT', { minimumFractionDigits: 2 });
     });
   };
 
+  // ============================================
+  // EVENTO PERSONALIZZATO “timeEntrySaved”
+  // ============================================
+  // Quando viene salvata una voce in time-entry-form.js, emettiamo questo evento:
+  // window.dispatchEvent(new Event('timeEntrySaved'));
   window.addEventListener('timeEntrySaved', () => {
     // 1) Ricarico il riepilogo mensile (se la sezione è presente)
     if (monthSelect && summaryContainer) {
@@ -292,6 +309,9 @@ ore = decHours.toLocaleString('it-IT', { minimumFractionDigits: 2 });
     }
   });
 
+  // ============================================
+  // UTILITY COMUNI: MESSAGGI E PROGRESS
+  // ============================================
   function showProgress(text) {
     let progressContainer = document.getElementById('progressContainer');
     if (!progressContainer) {

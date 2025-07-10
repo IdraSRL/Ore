@@ -1,3 +1,5 @@
+// preventivo.js v1.0
+// Prezzi unitari
 const prezzi = {
   canovaccio: 0.45,
   matrimonialeMillerighe: 1.18,
@@ -13,6 +15,7 @@ const prezzi = {
   minuti: 25.00
 };
 
+// Stato dell'app
 const state = {
   isDetailsVisible: false,
   totalPrice: 0,
@@ -21,10 +24,12 @@ const state = {
   margine: 0
 };
 
+// Formatta in euro
 function formatEuro(value) {
   return "€ " + value.toFixed(2);
 }
 
+// Calcolo biancheria
 function calcolaBiancheria(matrimoniali, singoli, cucine, bagni) {
   const lenzuolaMat = matrimoniali * 3 * prezzi.matrimonialeMillerighe;
   const lenzuolaSing = singoli * 3 * prezzi.singoloMillerighe;
@@ -37,6 +42,7 @@ function calcolaBiancheria(matrimoniali, singoli, cucine, bagni) {
   return lenzuolaMat + lenzuolaSing + federe + asciugamani + cortesia + cucina + bagno;
 }
 
+// Calcolo principale
 function aggiornaPreventivo() {
   const m = parseFloat(document.getElementById('lettiMatrimoniali').value) || 0;
   const s = parseFloat(document.getElementById('lettiSingoli').value) || 0;
@@ -49,6 +55,7 @@ function aggiornaPreventivo() {
   const totale = Math.ceil((1.5 * (biancheria + personale)) / 5) * 5;
   const margine = totale - biancheria - personale;
 
+  // aggiorna stato
   state.biancheriaTOT = biancheria;
   state.przPersonale = personale;
   state.totalPrice = totale;
@@ -57,6 +64,7 @@ function aggiornaPreventivo() {
   aggiornaInterfaccia();
 }
 
+// UI update
 function aggiornaInterfaccia() {
   document.getElementById('total_price').textContent = formatEuro(state.totalPrice);
   document.getElementById('biancheriaTOT').textContent = state.isDetailsVisible ? formatEuro(state.biancheriaTOT) : '****';
@@ -69,11 +77,13 @@ function aggiornaInterfaccia() {
   document.getElementById('hiddenResults').classList.toggle('d-none', !state.isDetailsVisible);
 }
 
+// Toggle dettagli
 function toggleDettagli() {
   state.isDetailsVisible = !state.isDetailsVisible;
   aggiornaInterfaccia();
 }
 
+// Init
 document.addEventListener('DOMContentLoaded', () => {
   const inputs = ['lettiMatrimoniali', 'lettiSingoli', 'cucina', 'bagno', 'ore'];
   inputs.forEach(id => {

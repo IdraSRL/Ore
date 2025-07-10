@@ -1,3 +1,5 @@
+// allarmi.js v1.0
+// assets/js/alarms.js
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
 import { db } from './firebase-config.js';
 
@@ -8,6 +10,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  // 1) Fetch alarm_general
   let general = [];
   try {
     const genSnap = await getDoc(doc(db, 'Data', 'alarm_general'));
@@ -17,6 +20,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
   }
 
+  // 2) Fetch alarm_acli
   let acli = [];
   try {
     const acliSnap = await getDoc(doc(db, 'Data', 'alarm_acli'));
@@ -26,6 +30,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
   }
 
+  // 3) Render general
   if (!Array.isArray(general)) {
   } else {
     general.forEach((alarm, i) => {
@@ -39,6 +44,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // 4) Render acli
   if (!Array.isArray(acli)) {
   } else if (acli.length) {
     const section = document.createElement('div');

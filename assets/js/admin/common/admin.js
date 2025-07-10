@@ -2,6 +2,7 @@
 
 import { AuthService } from "../../auth/auth.js";
 import { FirestoreService } from "../../common/firestore-service.js";
+import { handleBnbFilter } from "../bnb/bnb-form.js";
 import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
 import { db } from "../../common/firebase-config.js";
 import { exportToExcel } from "../../common/export-excel.js";
@@ -351,4 +352,81 @@ function showAlert(msg, type = 'info') {
   a.textContent = msg;
   document.body.append(a);
   setTimeout(() => a.remove(), 4000);
+}
+
+/**
+ * Carica e renderizza tutti i bigliettini BnB per la data indicata
+ * @param {string} date  // 'YYYY-MM-DD'
+ * @param {HTMLElement} container
+ */
+export async function loadBnbEntries(date, container) {
+  container.innerHTML = '';  // reset
+  try {
+    const ref = doc(db, 'Bigliettini', date);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      container.innerHTML = '<p class="text-muted">Nessun bigliettino per questa data.</p>';
+      return;
+    }
+    const data = snap.data();
+
+    Object.entries(data).forEach(([safeKey, d]) => {
+      const bnbName = safeKey.replace(/_/g, '.');
+
+      // Card wrapper
+      const card = document.createElement('div');
+      card.className = 'card mb-4';
+      card.innerHTML = `
+        <div class="card-header">
+          <strong>${bnbName}</strong> — ${d.dip1}${d.dip2 ? `, ${d.dip2}` : ''}
+        </div>
+        <div class="card-body p-3">
+          <h6>Attività</h6>
+          <table class="table table-sm mb-3">
+            <thead>
+              <tr>
+                <th>Check-Out</th><th>Refresh</th><th>Refresh Prof.</th>
+                <th>Area Comune</th><th>Ciabattine</th><th>Ore Extra</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${d.checkout || 0}</td>
+                <td>${d.refresh || 0}</td>
+                <td>${d.refreshProfondo || 0}</td>
+                <td>${d.areaComune || 0}</td>
+                <td>${d.ciabattine || 0}</td>
+                <td>${d.oreExtra || 0}</td>
+              </tr>
+            </tbody>
+          </table>
+          <h6>Biancheria</h6>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Voce</th>
+                <th>Sporco</th><th>Pulito</th><th>Magazzino</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${['matrimoniale', 'federa', 'viso', 'corpo', 'bidet', 'scendiBagno']
+          .map(field => `
+                  <tr>
+                    <td class="text-capitalize">${field}</td>
+                    <td>${(d.sporco?.[field] ?? 0)}</td>
+                    <td>${(d.pulito?.[field] ?? 0)}</td>
+                    <td>${(d.magazzino?.[field] ?? 0)}</td>
+                  </tr>
+                `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error('❌ loadBnbEntries error', err);
+    container.innerHTML = '<p class="text-danger">Errore caricamento bigliettini.</p>';
+  }
 }
