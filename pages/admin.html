@@ -141,31 +141,22 @@
           <div class="card-body">
             <h3 class="card-title mb-4">Elenco Bigliettini BnB</h3>
             <div class="row mb-3">
-              <div class="col-sm-4">
+              <div class="col-sm-6">
+                <label for="bnbFilterDate" class="form-label">Seleziona Data</label>
                 <input type="date" id="bnbFilterDate" class="form-control" required />
+              </div>
+              <div class="col-sm-6 d-flex align-items-end">
+                <button id="bnbFilterBtn" class="btn btn-primary" type="button">
+                  <i class="fas fa-search me-1"></i>Carica Bigliettini
+                </button>
               </div>
             </div>
             <div id="bnbEntriesContainer" class="table-responsive">
-              <!-- Qui verranno iniettati gli accordion dei bigliettini -->
+              <p class="text-muted">Seleziona una data per visualizzare i bigliettini.</p>
             </div>
           </div>
         </div>
       </div>
-      <!-- Generata via JavaScript -->
-    </div>
-  </div>
-
-  <div class="tab-content" id="adminTabsContent">
-
-    <!-- PANE RIEPILOGO ORE -->
-    <div class="tab-pane fade show active" id="orePane" role="tabpanel" aria-labelledby="ore-tab">
-    
-    </div>
-
-    <!-- PANE BIGLIETTINI BnB -->
-    <div class="tab-pane fade" id="bnbPane" role="tabpanel" aria-labelledby="bnb-tab">
-   
-    </div>
 
 <!-- ==== PANE GRADIMENTO ==== -->
 <div class="tab-pane fade" id="gradimentoPane" role="tabpanel" aria-labelledby="gradimento-tab">
@@ -534,20 +525,43 @@
     if (!AuthService.checkAuth() || !AuthService.isAdmin()) return;
 
     const dateInput = document.getElementById('bnbFilterDate');
+    const filterBtn = document.getElementById('bnbFilterBtn');
     const container = document.getElementById('bnbEntriesContainer');
+    
+    if (!dateInput || !container || !filterBtn) {
+      console.warn('Elementi BnB non trovati nella pagina');
+      return;
+    }
+    
     const today = new Date().toISOString().slice(0, 10);
 
     // Valore iniziale e primo caricamento
     dateInput.value = today;
-    await loadBnbEntries(today, container);
+    
+    // Funzione per caricare i bigliettini
+    const loadData = async () => {
+      const selectedDate = dateInput.value;
+      if (!selectedDate) {
+        container.innerHTML = '<p class="text-warning">Seleziona una data valida.</p>';
+        return;
+      }
+      
+      container.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div><p class="mt-2">Caricamento bigliettini...</p></div>';
+      
+      try {
+        await loadBnbEntries(selectedDate, container);
+      } catch (error) {
+        console.error('Errore nel caricamento:', error);
+        container.innerHTML = '<p class="text-danger">Errore nel caricamento dei bigliettini.</p>';
+      }
+    };
 
-    // Al cambio di data, ricarica automaticamente
-    dateInput.addEventListener('change', async () => {
-      const d = dateInput.value;
-      if (!d) return;
-      container.innerHTML = '<p>Caricamento…</p>';
-      await loadBnbEntries(d, container);
-    });
+    // Event listeners
+    filterBtn.addEventListener('click', loadData);
+    dateInput.addEventListener('change', loadData);
+    
+    // Caricamento iniziale
+    await loadData();
   });
 </script>
 

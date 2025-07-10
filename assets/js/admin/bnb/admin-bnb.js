@@ -1,6 +1,6 @@
 // admin-bnb.js
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js?v=1.1.0';
-import { db } from "../../common/firebase-config.js?v=1.1.0";
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
+import { db } from "../../common/firebase-config.js";
 
 /** Ritorna la classe corretta in base al testo (case-insensitive, punto/underscore) */
 function getKeywordClass(text) {
@@ -15,7 +15,7 @@ function getKeywordClass(text) {
 /**
  * Applica keyword-classes a:
  *  - tutte le <td> dentro rootEl
- *  - l’eventuale .card-header dentro rootEl
+ *  - l'eventuale .card-header dentro rootEl
  */
 function applyKeywordClasses(rootEl) {
   // colorazione celle
@@ -31,6 +31,11 @@ function applyKeywordClasses(rootEl) {
   }
 }
 
+/**
+ * Carica e renderizza tutti i bigliettini BnB per la data indicata
+ * @param {string} date  // 'YYYY-MM-DD'
+ * @param {HTMLElement} container
+ */
 export async function loadBnbEntries(date, container) {
   container.innerHTML = '';
   try {
@@ -91,7 +96,8 @@ export async function loadBnbEntries(date, container) {
       // applica colorazione a header + td
       applyKeywordClasses(card);
     });
-  } catch {
+  } catch (error) {
+    console.error('❌ loadBnbEntries error:', error);
     container.innerHTML = '<p class="text-danger">Errore caricamento bigliettini.</p>';
   }
 }
