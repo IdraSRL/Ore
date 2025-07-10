@@ -111,35 +111,3 @@ export const TimeEntryService = {
   }
 };
 
-// Logica UI per mostrare attività salvate quando cambia la data
-
-document.addEventListener('DOMContentLoaded', () => {
-  const dateInput = document.getElementById('date');
-  const recentDiv = document.getElementById('recentActivities');
-  const userEl    = document.getElementById('userDisplay');
-
-  if (dateInput && recentDiv && userEl) {
-    dateInput.addEventListener('change', async () => {
-      const username = userEl.textContent.trim();
-      const day = dateInput.value;
-      const res = await FirestoreService.getEmployeeDay(username, day);
-
-      recentDiv.style.display = 'block';
-      let htmlContent;
-      if (res.success && Array.isArray(res.data?.attività)) {
-        const acts = res.data.attività;
-        if (acts.length > 0) {
-          const items = acts.map(a =>
-            `<li class="list-group-item"><strong>${a.nome}</strong> – Tipo: ${a.tipo}, Minuti: ${a.minuti}, Persone: ${a.persone}, Moltiplicatore: ${a.moltiplicatore}</li>`
-          ).join('');
-          htmlContent = `<ul class="list-group">${items}</ul>`;
-        } else {
-          htmlContent = '<p class="text-muted">Nessuna attività per questa data.</p>';
-        }
-      } else {
-        htmlContent = '<p class="text-muted">Errore recupero attività.</p>';
-      }
-      recentDiv.innerHTML = htmlContent;
-    });
-  }
-});

@@ -66,9 +66,6 @@
   gap: 0.5rem;
 }
 
-.w-100 {
-    width: fit-content !important;
-}
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -81,10 +78,6 @@ body {
     overflow-x: auto !important;
 }
 
-.modal-dialog {
-    max-width: fit-content !important;
-    margin: 0 auto !important;
-}
 
 /* ===== NAVBAR ===== */
 .navbar {
@@ -786,47 +779,6 @@ body {
 }
 
 /* ===== VALUTAZIONE PRODOTTI STYLES ===== */
-.product-image {
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.product-image:hover {
-  transform: scale(1.05);
-}
-
-.toast-notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  color: white;
-  font-weight: 500;
-  z-index: 10000;
-  max-width: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.toast-error {
-  background: linear-gradient(45deg, #ef4444, #dc2626);
-}
-
-.toast-success {
-  background: linear-gradient(45deg, #10b981, #059669);
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes slideOutRight {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
-}
-
-/* ===== PRODUCT RATING STYLES ===== */
 .product-image {
   cursor: pointer;
   transition: transform 0.2s ease;

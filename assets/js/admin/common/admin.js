@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Carica dati iniziali
   await loadData();
-  initBnBSection();
 });
 
 /**
@@ -355,71 +354,6 @@ function showAlert(msg, type = 'info') {
   setTimeout(() => a.remove(), 4000);
 }
 
-/**
- * Inizializza sezione BnB con filtro
- */
-function initBnBSection() {
-  const filterBtn = document.getElementById('bnbFilterBtn');
-  const dateInput = document.getElementById('bnbFilterDate');
-  const container = document.getElementById('bnbEntriesContainer');
-  if (!filterBtn || !dateInput || !container) return;
-
-  filterBtn.onclick = async () => {
-    container.innerHTML = '';
-    const date = dateInput.value;
-    if (!date) {
-      container.innerHTML = '<p class="text-muted">Seleziona data</p>';
-      return;
-    }
-    try {
-      const rows = await handleBnbFilter(date);
-      if (!rows.length) {
-        container.innerHTML = `<p class="text-center text-muted">Nessun bigliettino per ${date}.</p>`;
-        return;
-      }
-      const wrapper = document.createElement('div'); wrapper.className = 'table-responsive';
-      const table = document.createElement('table'); table.className = 'table table-bordered custom mb-0';
-      const thead = document.createElement('thead');
-      const headRow = document.createElement('tr');
-      ['Data', 'Dip1', 'Dip2', 'BnB', 'Azioni'].forEach(text => {
-        const th = document.createElement('th'); th.className = 'fw-bold text-center'; th.textContent = text;
-        headRow.appendChild(th);
-      }); thead.appendChild(headRow); table.appendChild(thead);
-      const tbody = document.createElement('tbody');
-      rows.forEach(entry => {
-        const trMain = document.createElement('tr');
-        ['date', 'dip1', 'dip2', 'bnb'].forEach(key => {
-          const td = document.createElement('td'); td.textContent = entry[key] || '-'; trMain.appendChild(td);
-        });
-        const tdDel = document.createElement('td');
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-sm btn-outline-danger'; btn.textContent = 'Elimina';
-        btn.onclick = () => onDelete(entry.date, entry.bnb);
-        tdDel.appendChild(btn); trMain.appendChild(tdDel);
-        tbody.appendChild(trMain);
-        // TODO: append task rows and biancheria if needed
-      });
-      table.appendChild(tbody); wrapper.appendChild(table); container.appendChild(wrapper);
-    } catch (err) {
-      console.error(err); container.innerHTML = '<p class="text-danger text-center">Errore caricamento bigliettini</p>';
-    }
-  };
-
-  async function onDelete(date, bnbKey) {
-    if (!confirm('Eliminare?')) return;
-    try {
-      const ref = doc(db, 'Bigliettini', date);
-      const snap = await getDoc(ref);
-      const data = snap.exists() ? snap.data() : {};
-      delete data[bnbKey];
-      await setDoc(ref, data);
-      filterBtn.click();
-    } catch {
-      alert('Errore eliminazione');
-    }
-  }
-
-}
 /**
  * Carica e renderizza tutti i bigliettini BnB per la data indicata
  * @param {string} date  // 'YYYY-MM-DD'
