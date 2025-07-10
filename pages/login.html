@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+  <!-- Sistema di Cache-Busting -->
+  <script src="../assets/js/common/loader.js"></script>
   <script src="../assets/js/common/input-date-polyfill.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,7 +14,7 @@
     rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
     crossorigin="anonymous">
-      <link rel="stylesheet" href="../assets/css/style.css?v=1.1.0">
+      <link rel="stylesheet" href="../assets/css/style.css">
 
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
@@ -84,7 +86,7 @@
 
       <!-- Versione -->
       <div class="text-center mt-3">
-        <small class="text-muted version-display">v=1.1.0</small>
+        <small class="text-muted version-display">Caricamento...</small>
       </div>
 
     </div>
@@ -99,7 +101,7 @@
 
   <!-- Script di login -->
 <script type="module">
-  import { AuthService } from "../assets/js/auth/auth.js?v=1.1.0";
+  import { AuthService } from "../assets/js/auth/auth.js";
 
   // Avvia il login (popola la select e gestisce il form)
   document.addEventListener("DOMContentLoaded", () => {
@@ -111,9 +113,6 @@
     );
   });
 </script>
-
-<!-- Version Script -->
-<script type="module" src="../assets/js/common/version.js?v=1.1.0"></script>
 
 </body>
 </html>
