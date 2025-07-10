@@ -155,16 +155,13 @@ function renderSummary(data, year, month) {
           ${cardsHtml}
         </div>
 
-        <button class="btn btn-sm btn-outline-secondary mb-3"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#${toggleId}"
-                aria-expanded="false"
-                aria-controls="${toggleId}">
-          Mostra dettagli ▼
+        <button class="btn btn-sm btn-outline-secondary mb-3" 
+                type="button" 
+                onclick="toggleEmployeeDetails('${toggleId}', this)">
+          <span>Mostra dettagli</span> <i class="fas fa-chevron-down ms-1"></i>
         </button>
 
-        <div class="collapse" id="${toggleId}">
+        <div class="collapse" id="${toggleId}" style="display: none;">
           <div class="table-responsive">
             <table class="table table-dark table-striped mb-0">
               <thead>
@@ -189,6 +186,29 @@ function renderSummary(data, year, month) {
   // Attacca listener bottoni di dettaglio
   summaryDiv.querySelectorAll('.view-btn').forEach(btn => btn.onclick = onViewDetail);
 }
+
+// Funzione globale per toggle dettagli dipendente
+window.toggleEmployeeDetails = function(toggleId, buttonElement) {
+  const detailsElement = document.getElementById(toggleId);
+  const icon = buttonElement.querySelector('i');
+  const span = buttonElement.querySelector('span');
+  
+  if (detailsElement.style.display === 'none' || detailsElement.style.display === '') {
+    // Apri i dettagli
+    detailsElement.style.display = 'block';
+    detailsElement.classList.add('show');
+    span.textContent = 'Nascondi dettagli';
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-up');
+  } else {
+    // Chiudi i dettagli
+    detailsElement.style.display = 'none';
+    detailsElement.classList.remove('show');
+    span.textContent = 'Mostra dettagli';
+    icon.classList.remove('fa-chevron-up');
+    icon.classList.add('fa-chevron-down');
+  }
+};
 
 /**
  * Calcola statistiche mensili

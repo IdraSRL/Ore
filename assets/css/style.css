@@ -841,3 +841,30 @@ body {
   from { transform: translateX(0); opacity: 1; }
   to { transform: translateX(100%); opacity: 0; }
 }
+
+/* ===== COLLAPSE ANIMATIONS ===== */
+.collapse {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.collapse.show {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Chevron rotation animation */
+.fas.fa-chevron-down,
+.fas.fa-chevron-up {
+  transition: transform 0.3s ease;
+}

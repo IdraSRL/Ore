@@ -244,15 +244,14 @@ class ProductRatingManagerEnhanced {
                 <div class="card-body">
                     <div class="mb-3">
                         <button class="btn btn-outline-light btn-sm w-100" type="button" 
-                                data-bs-toggle="collapse" data-bs-target="#rating-form-${product.id}" 
-                                aria-expanded="false" aria-controls="rating-form-${product.id}">
+                                onclick="productRatingManager.toggleRatingForm('${product.id}')">
                             <i class="fas fa-star me-1"></i>
                             ${existingRating ? 'Modifica Valutazione' : 'Valuta Prodotto'}
-                            <i class="fas fa-chevron-down ms-1"></i>
+                            <i class="fas fa-chevron-down ms-1" id="chevron-${product.id}"></i>
                         </button>
                     </div>
                     
-                    <div class="collapse" id="rating-form-${product.id}">
+                    <div class="collapse" id="rating-form-${product.id}" style="display: none;">
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-primary">
                                 <i class="fas fa-magic me-1"></i>Efficacia: <span id="efficacia-value-${product.id}">${efficacia}</span>/10
@@ -321,6 +320,29 @@ class ProductRatingManagerEnhanced {
         });
 
         return cardContainer;
+    }
+
+    toggleRatingForm(productId) {
+        const formElement = document.getElementById(`rating-form-${productId}`);
+        const chevronElement = document.getElementById(`chevron-${productId}`);
+        
+        if (formElement.style.display === 'none' || formElement.style.display === '') {
+            // Apri il form
+            formElement.style.display = 'block';
+            formElement.classList.add('show');
+            if (chevronElement) {
+                chevronElement.classList.remove('fa-chevron-down');
+                chevronElement.classList.add('fa-chevron-up');
+            }
+        } else {
+            // Chiudi il form
+            formElement.style.display = 'none';
+            formElement.classList.remove('show');
+            if (chevronElement) {
+                chevronElement.classList.remove('fa-chevron-up');
+                chevronElement.classList.add('fa-chevron-down');
+            }
+        }
     }
 
     createRatingDots(rating, productId, currentValue) {
