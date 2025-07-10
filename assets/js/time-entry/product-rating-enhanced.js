@@ -229,7 +229,7 @@ class ProductRatingManagerEnhanced {
                     <img src="${product.imageUrl}" 
                          alt="${product.name}" class="product-image me-3" 
                          style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
-                         onerror="this.src='assets/img/products/placeholder.jpg'">
+                         onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
                     <div class="flex-grow-1">
                         <h6 class="mb-0">${product.name}</h6>
                         <small class="text-muted">${product.description || 'Valuta questo prodotto'}</small>
