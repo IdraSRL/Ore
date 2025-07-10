@@ -129,7 +129,10 @@
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const stats = window.firebaseService.calculateStats(this.filtered);
+      
+      // Distruggi il grafico esistente se presente
       if (this.charts.bar) this.charts.bar.destroy();
+      
       this.charts.bar = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -187,7 +190,10 @@
       const ctx = canvas.getContext('2d');
       const stats = window.firebaseService.calculateStats(this.filtered);
       const months = Object.keys(stats.monthlyTrend).sort();
+      
+      // Distruggi il grafico esistente se presente
       if (this.charts.line) this.charts.line.destroy();
+      
       this.charts.line = new Chart(ctx, {
         type:'line',
         data:{ 
@@ -250,6 +256,14 @@
 
       const stats = window.firebaseService.calculateStats(this.filtered);
       const clientStats = stats.clientStats;
+
+      // Distruggi tutti i grafici clienti esistenti
+      Object.values(this.clientCharts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      this.clientCharts = {};
 
       // Pulisci container
       container.innerHTML = '';

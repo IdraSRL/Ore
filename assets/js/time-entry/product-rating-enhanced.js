@@ -210,9 +210,11 @@ class ProductRatingManagerEnhanced {
         const profumo = existingRating ? existingRating.profumo : 5;
         const facilita = existingRating ? existingRating.facilita : 5;
 
-        // Determina classe di rating
+        // Determina classe di rating e sfondo
         let ratingClass = '';
+        let cardBgClass = 'bg-dark';
         if (existingRating) {
+            cardBgClass = 'bg-success bg-opacity-25'; // Sfondo verdolino per prodotti già valutati
             const avg = (efficacia + profumo + facilita) / 3;
             if (avg < 4) {
                 ratingClass = 'border-danger';
@@ -224,7 +226,7 @@ class ProductRatingManagerEnhanced {
         }
 
         cardContainer.innerHTML = `
-            <div class="card bg-dark ${ratingClass} h-100">
+            <div class="card ${cardBgClass} ${ratingClass} h-100">
                 <div class="card-header bg-secondary text-light d-flex align-items-center">
                     <img src="${product.imageUrl}" 
                          alt="${product.name}" class="product-image me-3" 
@@ -241,45 +243,74 @@ class ProductRatingManagerEnhanced {
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-primary">
-                            <i class="fas fa-magic me-1"></i>Efficacia: <span id="efficacia-value-${product.id}">${efficacia}</span>/10
-                        </label>
-                        <input type="range" min="1" max="10" value="${efficacia}" 
-                               class="form-range" id="efficacia-${product.id}">
+                        <button class="btn btn-outline-light btn-sm w-100" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#rating-form-${product.id}" 
+                                aria-expanded="false" aria-controls="rating-form-${product.id}">
+                            <i class="fas fa-star me-1"></i>
+                            ${existingRating ? 'Modifica Valutazione' : 'Valuta Prodotto'}
+                            <i class="fas fa-chevron-down ms-1"></i>
+                        </button>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-success">
-                            <i class="fas fa-leaf me-1"></i>Profumo: <span id="profumo-value-${product.id}">${profumo}</span>/10
-                        </label>
-                        <input type="range" min="1" max="10" value="${profumo}" 
-                               class="form-range" id="profumo-${product.id}">
+                    <div class="collapse" id="rating-form-${product.id}">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-primary">
+                                <i class="fas fa-magic me-1"></i>Efficacia: <span id="efficacia-value-${product.id}">${efficacia}</span>/10
+                            </label>
+                            <div class="rating-dots" data-rating="efficacia" data-product="${product.id}" data-value="${efficacia}">
+                                ${this.createRatingDots('efficacia', product.id, efficacia)}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-success">
+                                <i class="fas fa-leaf me-1"></i>Profumo: <span id="profumo-value-${product.id}">${profumo}</span>/10
+                            </label>
+                            <div class="rating-dots" data-rating="profumo" data-product="${product.id}" data-value="${profumo}">
+                                ${this.createRatingDots('profumo', product.id, profumo)}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-warning">
+                                <i class="fas fa-hand-paper me-1"></i>Facilità d'uso: <span id="facilita-value-${product.id}">${facilita}</span>/10
+                            </label>
+                            <div class="rating-dots" data-rating="facilita" data-product="${product.id}" data-value="${facilita}">
+                                ${this.createRatingDots('facilita', product.id, facilita)}
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100 submit-rating" data-product-id="${product.id}">
+                            <i class="fas fa-save me-1"></i>
+                            ${existingRating ? 'Aggiorna Valutazione' : 'Salva Valutazione'}
+                        </button>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-warning">
-                            <i class="fas fa-hand-paper me-1"></i>Facilità d'uso: <span id="facilita-value-${product.id}">${facilita}</span>/10
-                        </label>
-                        <input type="range" min="1" max="10" value="${facilita}" 
-                               class="form-range" id="facilita-${product.id}">
-                    </div>
-                    
-                    <button class="btn btn-primary w-100 submit-rating" data-product-id="${product.id}">
-                        <i class="fas fa-star me-1"></i>
-                        ${existingRating ? 'Aggiorna Valutazione' : 'Invia Valutazione'}
-                    </button>
                 </div>
             </div>
         `;
 
-        // Add event listeners for sliders
-        const sliders = cardContainer.querySelectorAll('.form-range');
-        sliders.forEach(slider => {
-            slider.addEventListener('input', (e) => {
-                const valueSpan = document.getElementById(e.target.id.replace(e.target.id.split('-')[0], e.target.id.split('-')[0] + '-value'));
-                if (valueSpan) {
-                    valueSpan.textContent = e.target.value;
-                }
+        // Add event listeners for rating dots
+        const ratingDots = cardContainer.querySelectorAll('.rating-dots');
+        ratingDots.forEach(container => {
+            const dots = container.querySelectorAll('.rating-dot');
+            dots.forEach(dot => {
+                dot.addEventListener('click', (e) => {
+                    const value = parseInt(e.target.dataset.value);
+                    const rating = container.dataset.rating;
+                    const productId = container.dataset.product;
+                    
+                    // Aggiorna il valore visualizzato
+                    const valueSpan = document.getElementById(`${rating}-value-${productId}`);
+                    if (valueSpan) {
+                        valueSpan.textContent = value;
+                    }
+                    
+                    // Aggiorna l'aspetto dei dots
+                    this.updateRatingDots(container, value);
+                    
+                    // Salva il valore nel dataset del container
+                    container.dataset.value = value;
+                });
             });
         });
 
@@ -290,6 +321,37 @@ class ProductRatingManagerEnhanced {
         });
 
         return cardContainer;
+    }
+
+    createRatingDots(rating, productId, currentValue) {
+        let dotsHtml = '';
+        for (let i = 1; i <= 10; i++) {
+            const isActive = i <= currentValue;
+            dotsHtml += `
+                <span class="rating-dot ${isActive ? 'active' : ''}" 
+                      data-value="${i}" 
+                      style="cursor: pointer; display: inline-block; width: 20px; height: 20px; 
+                             border-radius: 50%; margin: 2px; border: 2px solid #6c757d;
+                             background-color: ${isActive ? '#0d6efd' : 'transparent'};
+                             transition: all 0.2s ease;">
+                </span>
+            `;
+        }
+        return dotsHtml;
+    }
+
+    updateRatingDots(container, value) {
+        const dots = container.querySelectorAll('.rating-dot');
+        dots.forEach((dot, index) => {
+            const dotValue = index + 1;
+            if (dotValue <= value) {
+                dot.classList.add('active');
+                dot.style.backgroundColor = '#0d6efd';
+            } else {
+                dot.classList.remove('active');
+                dot.style.backgroundColor = 'transparent';
+            }
+        });
     }
 
     setupImageModal() {
@@ -335,9 +397,14 @@ class ProductRatingManagerEnhanced {
 
     async submitRating(productId) {
         try {
-            const efficacia = parseInt(document.getElementById(`efficacia-${productId}`).value);
-            const profumo = parseInt(document.getElementById(`profumo-${productId}`).value);
-            const facilita = parseInt(document.getElementById(`facilita-${productId}`).value);
+            // Ottieni i valori dai rating dots
+            const efficaciaContainer = document.querySelector(`[data-rating="efficacia"][data-product="${productId}"]`);
+            const profumoContainer = document.querySelector(`[data-rating="profumo"][data-product="${productId}"]`);
+            const facilitaContainer = document.querySelector(`[data-rating="facilita"][data-product="${productId}"]`);
+            
+            const efficacia = parseInt(efficaciaContainer.dataset.value);
+            const profumo = parseInt(profumoContainer.dataset.value);
+            const facilita = parseInt(facilitaContainer.dataset.value);
             
             const rating = {
                 efficacia,

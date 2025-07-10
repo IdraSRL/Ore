@@ -732,17 +732,32 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // prendi l'elemento offcanvas
     const offcanvasEl = document.getElementById('offcanvasSidebar');
-    // crea o recupera l'istanza Offcanvas di Bootstrap
-    const offcanvasInstance = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
-
-    // per ogni nav-link dentro l'offcanvas, chiudi il pannello al click
-    offcanvasEl.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', () => {
-        offcanvasInstance.hide();
+    
+    if (offcanvasEl) {
+      const offcanvasInstance = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+      
+      // Chiudi offcanvas quando si clicca su un nav-link
+      offcanvasEl.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+          offcanvasInstance.hide();
+        });
       });
-    });
+      
+      // Rimuovi completamente il backdrop quando l'offcanvas si chiude
+      offcanvasEl.addEventListener('hidden.bs.offcanvas', function () {
+        // Rimuovi eventuali backdrop rimasti
+        const backdrops = document.querySelectorAll('.offcanvas-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        
+        // Rimuovi la classe modal-open dal body se presente
+        document.body.classList.remove('modal-open');
+        
+        // Ripristina lo scroll del body
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+      });
+    }
   });
 </script>
 
