@@ -102,7 +102,7 @@ I prodotti sono memorizzati nella collezione `Products` di Firestore con la segu
 
 ### Gestione Immagini
 Le immagini dei prodotti devono essere caricate manualmente nella cartella `assets/img/products/`.
-Il sistema include un'immagine placeholder per prodotti senza immagine.
+In caso di immagine mancante, viene mostrata un'immagine di fallback da Pexels.
 
 ### Filtri Disponibili
 - **Marca**: Filtra per tag-marca del prodotto
