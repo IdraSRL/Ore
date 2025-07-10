@@ -1,7 +1,7 @@
 import {
   getCollection,
   updateDoc
-} from "../../common/firestore-service.js?v=1.1.0";
+} from "../../common/firestore-service.js";
 
 const tabList    = document.getElementById('groupTabs');
 const tabContent = document.getElementById('groupTabContent');

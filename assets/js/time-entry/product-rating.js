@@ -1,5 +1,5 @@
 // product-rating.js v=1.0.0 - Sistema di valutazione prodotti integrato in timeEntry
-import { db } from "../common/firebase-config.js?v=1.1.0";
+import { db } from "../common/firebase-config.js";
 import { 
   collection, 
   doc, 
@@ -8,7 +8,7 @@ import {
   getDoc,
   serverTimestamp 
 } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { AuthService } from "../auth/auth.js?v=1.1.0";
+import { AuthService } from "../auth/auth.js";
 
 class ProductRatingManager {
     constructor() {
@@ -131,13 +131,13 @@ class ProductRatingManager {
         if (loadingElement) loadingElement.style.display = 'none';
 
         if (this.products.length === 0) {
-            if (noProductsElement) noProductsElement.style.display = 'block';
+            if (noProductsElement) noProductsElement.style.display = 'flex';
             return;
         }
 
         if (noProductsElement) noProductsElement.style.display = 'none';
         if (productsGrid) {
-            productsGrid.style.display = 'block';
+            productsGrid.style.display = 'flex';
             productsGrid.innerHTML = '';
             
             this.products.forEach(product => {

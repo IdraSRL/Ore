@@ -1,6 +1,6 @@
-import { AuthService } from '../js/auth/auth.js?v=1.1.0';
-import { TimeEntryService } from './time-entry.js?v=1.1.0';
-import { FirestoreService } from '../js/common/firestore-service.js?v=1.1.0';
+import { AuthService } from '../js/auth/auth.js';
+import { TimeEntryService } from './time-entry.js';
+import { FirestoreService } from '../js/common/firestore-service.js';
 import {
   calculateTotalMinutes,
   formatHoursMinutes,

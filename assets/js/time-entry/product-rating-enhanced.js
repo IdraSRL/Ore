@@ -173,7 +173,7 @@ class ProductRatingManagerEnhanced {
 
         if (this.filteredProducts.length === 0) {
             if (noProductsElement) {
-                noProductsElement.style.display = 'block';
+                noProductsElement.style.display = 'flex';
                 noProductsElement.innerHTML = `
                     <div class="text-center py-4">
                         <i class="fas fa-search fa-3x text-muted mb-3"></i>
@@ -190,7 +190,7 @@ class ProductRatingManagerEnhanced {
 
         if (noProductsElement) noProductsElement.style.display = 'none';
         if (productsGrid) {
-            productsGrid.style.display = 'block';
+            productsGrid.style.display = 'flex';
             productsGrid.innerHTML = '';
             
             this.filteredProducts.forEach(product => {
@@ -228,7 +228,7 @@ class ProductRatingManagerEnhanced {
                 <div class="card-header bg-secondary text-light d-flex align-items-center">
                     <img src="${product.imageUrl}" 
                          alt="${product.name}" class="product-image me-3" 
-                         style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
+                         style="width: 150px; height: 150px; border-radius: 8px; cursor: pointer;"
                          onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
                     <div class="flex-grow-1">
                         <h6 class="mb-0">${product.name}</h6>

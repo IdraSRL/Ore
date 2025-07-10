@@ -12,7 +12,7 @@ import {
   startAt,
   endAt
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=1.1.0";
+import { firebaseConfig } from "./firebase-config.js";
 
 // Inizializza Firebase
 const app = initializeApp(firebaseConfig);

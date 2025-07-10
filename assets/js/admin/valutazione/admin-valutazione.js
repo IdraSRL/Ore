@@ -1,5 +1,5 @@
 // admin-valutazione.js - Gestione valutazioni prodotti nel pannello admin
-import { db } from "../../common/firebase-config.js?v=1.1.0";
+import { db } from "../../common/firebase-config.js";
 import { 
   collection, 
   getDocs, 
@@ -172,7 +172,7 @@ class AdminValutazioneManager {
             id: formData.get('productId').trim(),
             name: formData.get('productName').trim(),
             description: formData.get('productDescription').trim(),
-            imageUrl: `assets/img/products/${formData.get('productImage').trim()}`,
+            imageUrl: `https://www.artigea.it/TestOre/assets/img/products/${formData.get('productImage').trim()}`,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
             createdAt: serverTimestamp(),

@@ -1,8 +1,8 @@
 // admin.js
 
-import { AuthService } from "../../auth/auth.js?v=1.1.0";
-import { FirestoreService } from "../../common/firestore-service.js?v=1.1.0";
-import { exportToExcel } from "../../common/export-excel.js?v=1.1.0";
+import { AuthService } from "../../auth/auth.js";
+import { FirestoreService } from "../../common/firestore-service.js";
+import { exportToExcel } from "../../common/export-excel.js";
 
 let currentData = {};
 

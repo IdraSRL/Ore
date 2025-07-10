@@ -6,7 +6,7 @@ import {
   doc,
   getDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-import { firebaseConfig } from "../common/firebase-config.js?v=1.1.0";
+import { firebaseConfig } from "../common/firebase-config.js";
 
 // Init Firebase
 const app = initializeApp(firebaseConfig);

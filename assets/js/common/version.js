@@ -4,7 +4,7 @@
  */
 
 // Versione principale dell'applicazione
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.3.0';
 
 // Informazioni aggiuntive (opzionali)
 export const BUILD_DATE = '2025-01-27';

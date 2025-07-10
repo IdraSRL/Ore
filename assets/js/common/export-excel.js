@@ -6,7 +6,7 @@ import {
   calculateTotalMinutes,
   formatHoursMinutes,
   formatDecimalHours
-} from '../common/time-utilis.js?v=1.1.0';
+} from '../common/time-utilis.js';
 
 export async function exportToExcel(data, year, month) {
   try {

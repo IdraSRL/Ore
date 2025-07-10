@@ -1,8 +1,8 @@
 // time-entry-core.js
 
-import { db } from "../common/firebase-config.js?v=1.1.0";
+import { db } from "../common/firebase-config.js";
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { FirestoreService } from "../common/firestore-service.js?v=1.1.0";
+import { FirestoreService } from "../common/firestore-service.js";
 
 /**
  * Converte un oggetto Date in stringa ISO locale 'YYYY-MM-DD'
