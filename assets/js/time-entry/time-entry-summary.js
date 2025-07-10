@@ -1,13 +1,13 @@
 // time-entry-summary.js
 
-import { AuthService } from "../auth/auth.js";
-import { FirestoreService } from "../common/firestore-service.js";
-import { AdminService } from "../admin/common/admin-service.js";
+import { AuthService } from "../auth/auth.js?v=1.1.0";
+import { FirestoreService } from "../common/firestore-service.js?v=1.1.0";
+import { AdminService } from "../admin/common/admin-service.js?v=1.1.0";
 // ATTENZIONE: percorso corretto "time-utils.js" e tolta la funzione mai utilizzata
 import {
   calculateTotalMinutes,
   formatDecimalHours
-} from '../common/time-utilis.js?v=1.0.0';
+} from '../common/time-utilis.js?v=1.1.0';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Verifica autenticazione

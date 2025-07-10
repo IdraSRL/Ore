@@ -1,4 +1,4 @@
-// export-excel.js v=1.0.0
+// export-excel.js v1.0
 // export-excel.js
 import ExcelJS from 'https://cdn.jsdelivr.net/npm/exceljs/+esm';
 
@@ -6,7 +6,7 @@ import {
   calculateTotalMinutes,
   formatHoursMinutes,
   formatDecimalHours
-} from '../common/time-utilis.js?v=1.0.0';
+} from '../common/time-utilis.js?v=1.1.0';
 
 export async function exportToExcel(data, year, month) {
   try {

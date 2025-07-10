@@ -1,15 +1,15 @@
 // admin.js
 
-import { AuthService } from "../../auth/auth.js";
-import { FirestoreService } from "../../common/firestore-service.js";
-import { handleBnbFilter } from "../bnb/bnb-form.js";
-import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { db } from "../../common/firebase-config.js";
-import { exportToExcel } from "../../common/export-excel.js";
+import { AuthService } from "../../auth/auth.js?v=1.1.0";
+import { FirestoreService } from "../../common/firestore-service.js?v=1.1.0";
+import { handleBnbFilter } from "../bnb/bnb-form.js?v=1.1.0";
+import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js?v=1.1.0';
+import { db } from "../../common/firebase-config.js?v=1.1.0";
+import { exportToExcel } from "../../common/export-excel.js?v=1.1.0";
 import {
   calculateTotalMinutes,
   formatDecimalHours
-} from '../../common/time-utilis.js';
+} from '../../common/time-utilis.js?v=1.1.0';
 
 
 let currentData = {};

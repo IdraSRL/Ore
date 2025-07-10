@@ -1,4 +1,4 @@
-// firestore-service.js v=1.0.0
+// firestore-service.js v1.0
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import {
   getFirestore,
@@ -12,8 +12,7 @@ import {
   startAt,
   endAt
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-import { firebaseConfig } from "./firebase-config.js?v=1.3.0";
-import { firebaseConfig } from "./firebase-config.js?v=1.0.0";
+import { firebaseConfig } from "./firebase-config.js?v=1.1.0";
 
 // Inizializza Firebase
 const app = initializeApp(firebaseConfig);

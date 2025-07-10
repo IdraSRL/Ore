@@ -1,5 +1,5 @@
 // admin-valutazione.js - Gestione valutazioni prodotti nel pannello admin
-import { db } from "../../common/firebase-config.js";
+import { db } from "../../common/firebase-config.js?v=1.1.0";
 import { 
   collection, 
   getDocs, 

@@ -1,6 +1,6 @@
 // admin-bnb.js
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { db } from "../../common/firebase-config.js";
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js?v=1.1.0';
+import { db } from "../../common/firebase-config.js?v=1.1.0";
 
 /** Ritorna la classe corretta in base al testo (case-insensitive, punto/underscore) */
 function getKeywordClass(text) {

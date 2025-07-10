@@ -1,13 +1,13 @@
 // time-entry-form.js
 
-import { AuthService } from '../auth/auth.js';
-import { TimeEntryService } from './time-entry-core.js';
-import { FirestoreService } from '../common/firestore-service.js';
+import { AuthService } from '../auth/auth.js?v=1.1.0';
+import { TimeEntryService } from './time-entry-core.js?v=1.1.0';
+import { FirestoreService } from '../common/firestore-service.js?v=1.1.0';
 import {
   calculateTotalMinutes,
   formatHoursMinutes,
   formatDecimalHours
-} from '../common/time-utilis.js?v=1.0.0';
+} from '../common/time-utilis.js';
 
 // raccoglie i dati da ogni .activity-group
 function collectActivitiesFromForm() {

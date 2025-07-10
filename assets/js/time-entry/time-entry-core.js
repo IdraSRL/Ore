@@ -1,6 +1,6 @@
-import { db } from "../common/firebase-config.js";
+import { db } from "../common/firebase-config.js?v=1.1.0";
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { FirestoreService } from "../common/firestore-service.js";
+import { FirestoreService } from "../common/firestore-service.js?v=1.1.0";
 
 function formatISO(date) {
   const d = String(date.getDate()).padStart(2, '0');

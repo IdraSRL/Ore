@@ -3,7 +3,7 @@ import { utils, writeFile } from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm"
 import {
   calculateTotalMinutes,
   formatDecimalHours
-} from '../../common/time-utilis.js';
+} from '../../common/time-utilis.js?v=1.1.0';
 
 /**
  * Calcola le ore totali decimali, i minuti non servono più separatamente,

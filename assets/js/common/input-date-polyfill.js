@@ -1,4 +1,4 @@
-// input-date-polyfill.js v=1.0.0
+// input-date-polyfill.js v1.0
 // Generic Date input fallback using Flatpickr
 (function() {
   var testInput = document.createElement('input');

@@ -1,5 +1,5 @@
 // product-rating.js v=1.0.0 - Sistema di valutazione prodotti integrato in timeEntry
-import { db } from "../common/firebase-config.js";
+import { db } from "../common/firebase-config.js?v=1.1.0";
 import { 
   collection, 
   doc, 
@@ -8,7 +8,7 @@ import {
   getDoc,
   serverTimestamp 
 } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { AuthService } from "../auth/auth.js?v=1.0.0";
+import { AuthService } from "../auth/auth.js?v=1.1.0";
 
 class ProductRatingManager {
     constructor() {

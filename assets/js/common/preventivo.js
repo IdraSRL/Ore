@@ -1,4 +1,4 @@
-// preventivo.js v=1.0.0
+// preventivo.js v1.0
 // Prezzi unitari
 const prezzi = {
   canovaccio: 0.45,

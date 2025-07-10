@@ -1,4 +1,4 @@
-// auth.js v=1.0.0
+// auth.js v1.0
 // assets/js/auth.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import {
@@ -6,8 +6,7 @@ import {
   doc,
   getDoc
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-import { firebaseConfig } from "../common/firebase-config.js?v=1.3.0";
-import { firebaseConfig } from "../common/firebase-config.js?v=1.0.0";
+import { firebaseConfig } from "../common/firebase-config.js?v=1.1.0";
 
 // Init Firebase
 const app = initializeApp(firebaseConfig);

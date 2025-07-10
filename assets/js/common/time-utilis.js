@@ -1,4 +1,4 @@
-// time-utilis.js v=1.0.0
+// time-utilis.js v1.0
 
 export function calculateTotalMinutes(activities) {
   return activities.reduce((sum, { minutes, multiplier, people }) => {

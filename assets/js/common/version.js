@@ -1,4 +1,4 @@
-// version.js v=1.0.0
+// version.js v1.0
 export const VERSION = {
   app: "1.0.0",
   build: "2025-01-27",
