@@ -1,4 +1,4 @@
-// firebase-config.js v1.0
+// firebase-config.js v=1.0.0
 // 1) Import delle librerie Firebase v9.22.1
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import { getAuth }       from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";

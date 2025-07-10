@@ -1,4 +1,4 @@
-// utils.js v1.0
+// utils.js v=1.0.0
 
 // utils.js – funzioni comuni centralizzate
 

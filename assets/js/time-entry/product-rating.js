@@ -1,7 +1,7 @@
-// product-rating.js - Sistema di valutazione prodotti integrato in timeEntry
+// product-rating.js v=1.0.0 - Sistema di valutazione prodotti integrato in timeEntry
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { AuthService } from "../auth/auth.js";
+import { AuthService } from "../auth/auth.js?v=1.0.0";
 
 // Configurazione Firebase per valutazioni prodotti
 const firebaseConfig = {

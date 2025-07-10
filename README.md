@@ -9,9 +9,9 @@ Questo progetto implementa un sistema di versioning per garantire il corretto ca
 
 ### Struttura Versioning
 
-- **Versione App:** 1.0.0 (formato semver)
-- **Versione CSS:** v1.0
-- **Versione JavaScript:** v1.0
+- **Versione App:** 1.0.0 (formato semver) 
+- **Versione CSS:** v=1.0.0
+- **Versione JavaScript:** v=1.0.0
 - **Build Date:** 2025-01-27
 
 ### File di Configurazione
@@ -23,8 +23,8 @@ Questo progetto implementa un sistema di versioning per garantire il corretto ca
 
 Tutti i file CSS e JavaScript includono il parametro di versione nell'URL:
 ```html
-<link rel="stylesheet" href="assets/css/style.css?v=1.3.0">
-<script type="module" src="assets/js/common/version.js?v=1.3.0"></script>
+<link rel="stylesheet" href="assets/css/style.css?v=1.0.0">
+<script type="module" src="assets/js/common/version.js?v=1.0.0"></script>
 ```
 
 ### Visualizzazione Versione
@@ -40,7 +40,7 @@ La versione è visibile in tutte le pagine dell'applicazione:
 Per aggiornare la versione:
 
 1. Modificare `version.json`
-2. Aggiornare il parametro `?v=X.X` in tutti i link CSS/JS
+2. Aggiornare il parametro `?v=1.0.0` in tutti i link CSS/JS tramite cerca e sostituisci
 3. Aggiornare la versione in `assets/js/common/version.js`
 
 ### Benefici
@@ -57,12 +57,12 @@ Per aggiornare la versione:
 ├── version.json
 ├── assets/
 │   ├── css/
-│   │   ├── style.css?v=1.3.0
-│   │   ├── style_bnb.css?v=1.3.0
-│   │   └── style_gradimento.css?v=1.3.0
+│   │   ├── style.css?v=1.0.0
+│   │   ├── style_bnb.css?v=1.0.0
+│   │   └── style_gradimento.css?v=1.0.0
 │   └── js/
 │       ├── common/
-│       │   ├── version.js?v=1.3.0
+│       │   ├── version.js?v=1.0.0
 │       │   └── ...
 │       └── ...
 ├── pages/

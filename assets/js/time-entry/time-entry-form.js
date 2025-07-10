@@ -7,7 +7,7 @@ import {
   calculateTotalMinutes,
   formatHoursMinutes,
   formatDecimalHours
-} from '../common/time-utilis.js';
+} from '../common/time-utilis.js?v=1.0.0';
 
 // raccoglie i dati da ogni .activity-group
 function collectActivitiesFromForm() {

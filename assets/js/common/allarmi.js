@@ -1,7 +1,7 @@
-// allarmi.js v1.0
+// allarmi.js v=1.0.0
 // assets/js/alarms.js
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-import { db } from './firebase-config.js?v=1.3.0';
+import { db } from './firebase-config.js?v=1.0.0';
 
 window.addEventListener('DOMContentLoaded', async () => {
 

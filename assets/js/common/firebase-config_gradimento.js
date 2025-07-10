@@ -1,4 +1,4 @@
-// firebase-config_gradimento.js v1.0
+// firebase-config_gradimento.js v=1.0.0
 // Configurazione Firebase
 // IMPORTANTE: Sostituisci questi valori con la tua configurazione Firebase
 const firebaseConfig = {

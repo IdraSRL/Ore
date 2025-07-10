@@ -7,7 +7,7 @@ import { AdminService } from "../admin/common/admin-service.js";
 import {
   calculateTotalMinutes,
   formatDecimalHours
-} from '../common/time-utilis.js';
+} from '../common/time-utilis.js?v=1.0.0';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Verifica autenticazione
