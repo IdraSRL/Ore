@@ -86,10 +86,6 @@
         <button class="nav-link" id="valutazione-tab" data-bs-toggle="tab" data-bs-target="#valutazionePane" type="button"
           role="tab" aria-controls="valutazionePane" aria-selected="false">Valutazione Prodotti</button>
       </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="gestione-prodotti-tab" data-bs-toggle="tab" data-bs-target="#gestioneProdottiPane" type="button"
-          role="tab" aria-controls="gestioneProdottiPane" aria-selected="false">Gestione Prodotti</button>
-      </li>
     </ul>
 
 
@@ -400,10 +396,12 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h3 class="card-title mb-0">📊 Dashboard Valutazioni Prodotti</h3>
           <div class="d-flex gap-2">
+            <button id="addProductBtn" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+              <i class="fas fa-plus me-1"></i>Aggiungi Prodotto
+            </button>
             <button id="refreshProductsBtn" class="btn btn-outline-secondary btn-sm">
               <i class="fas fa-sync-alt me-1"></i>Aggiorna
             </button>
-
           </div>
         </div>
         
@@ -479,117 +477,6 @@
     </div>
   </div>
 
-  <!-- ==== PANE GESTIONE PRODOTTI ==== -->
-  <div class="tab-pane fade" id="gestioneProdottiPane" role="tabpanel" aria-labelledby="gestione-prodotti-tab">
-    <div class="card border-secondary mb-4">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h3 class="card-title mb-0">🛍️ Gestione Prodotti</h3>
-          <div class="d-flex gap-2">
-            <button id="refreshProducts" class="btn btn-outline-secondary btn-sm">
-              <i class="fas fa-sync-alt me-1"></i>Aggiorna
-            </button>
-          </div>
-        </div>
-        
-        <!-- Form Aggiunta Prodotto -->
-        <div class="card bg-dark border-primary mb-4">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">
-              <i class="fas fa-plus me-2"></i>Aggiungi Nuovo Prodotto
-            </h5>
-          </div>
-          <div class="card-body">
-            <form id="addProductForm" class="row g-3">
-              <div class="col-md-6">
-                <label for="productId" class="form-label">ID Prodotto</label>
-                <input type="text" class="form-control bg-secondary text-light border-0" 
-                       id="productId" name="productId" required 
-                       placeholder="es: detergente-multiuso">
-                <small class="text-muted">Usare solo lettere minuscole, numeri e trattini</small>
-              </div>
-              <div class="col-md-6">
-                <label for="productName" class="form-label">Nome Prodotto</label>
-                <input type="text" class="form-control bg-secondary text-light border-0" 
-                       id="productName" name="productName" required 
-                       placeholder="es: Detergente Multiuso">
-              </div>
-              <div class="col-12">
-                <label for="productDescription" class="form-label">Descrizione</label>
-                <textarea class="form-control bg-secondary text-light border-0" 
-                          id="productDescription" name="productDescription" rows="2" required
-                          placeholder="Breve descrizione del prodotto"></textarea>
-              </div>
-              <div class="col-md-4">
-                <label for="productImage" class="form-label">Nome File Immagine</label>
-                <input type="text" class="form-control bg-secondary text-light border-0" 
-                       id="productImage" name="productImage" required 
-                       placeholder="es: detergente.jpg">
-                <small class="text-muted">Caricare manualmente in assets/img/products/</small>
-              </div>
-              <div class="col-md-4">
-                <label for="productMarca" class="form-label">Marca</label>
-                <input type="text" class="form-control bg-secondary text-light border-0" 
-                       id="productMarca" name="productMarca" required 
-                       placeholder="es: Ariel">
-              </div>
-              <div class="col-md-4">
-                <label for="productTipo" class="form-label">Tipo</label>
-                <input type="text" class="form-control bg-secondary text-light border-0" 
-                       id="productTipo" name="productTipo" required 
-                       placeholder="es: Detergente">
-              </div>
-              <div class="col-12">
-                <button type="submit" class="btn btn-success">
-                  <i class="fas fa-plus me-1"></i>Aggiungi Prodotto
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-        
-        <!-- Filtri -->
-        <div class="card bg-dark border-info mb-4">
-          <div class="card-header bg-info text-dark">
-            <h6 class="mb-0">
-              <i class="fas fa-filter me-2"></i>Filtri
-            </h6>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label for="marcaFilter" class="form-label">Marca</label>
-                <select class="form-select bg-secondary text-light border-0" id="marcaFilter">
-                  <option value="">Tutte le marche</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label for="tipoFilter" class="form-label">Tipo</label>
-                <select class="form-select bg-secondary text-light border-0" id="tipoFilter">
-                  <option value="">Tutti i tipi</option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label for="productSearch" class="form-label">Cerca per nome</label>
-                <input type="text" class="form-control bg-secondary text-light border-0" 
-                       id="productSearch" placeholder="Cerca prodotto...">
-              </div>
-              <div class="col-md-2 d-flex align-items-end">
-                <button id="resetFilters" class="btn btn-outline-warning w-100">
-                  <i class="fas fa-undo me-1"></i>Reset
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Lista Prodotti -->
-        <div id="productsListContainer" class="row g-4">
-          <!-- I prodotti verranno generati dinamicamente qui -->
-        </div>
-      </div>
-    </div>
-  </div>
 
 
   <!-- Loading Overlay -->
@@ -600,6 +487,69 @@
     </div>
   </div>
 
+  <!-- Modal Aggiunta Prodotto -->
+  <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content bg-dark text-light">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title" id="addProductModalLabel">
+            <i class="fas fa-plus me-2"></i>Aggiungi Nuovo Prodotto
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addProductForm" class="row g-3">
+            <div class="col-md-6">
+              <label for="productId" class="form-label">ID Prodotto</label>
+              <input type="text" class="form-control bg-secondary text-light border-0" 
+                     id="productId" name="productId" required 
+                     placeholder="es: detergente-multiuso">
+              <small class="text-muted">Usare solo lettere minuscole, numeri e trattini</small>
+            </div>
+            <div class="col-md-6">
+              <label for="productName" class="form-label">Nome Prodotto</label>
+              <input type="text" class="form-control bg-secondary text-light border-0" 
+                     id="productName" name="productName" required 
+                     placeholder="es: Detergente Multiuso">
+            </div>
+            <div class="col-12">
+              <label for="productDescription" class="form-label">Descrizione</label>
+              <textarea class="form-control bg-secondary text-light border-0" 
+                        id="productDescription" name="productDescription" rows="2" required
+                        placeholder="Breve descrizione del prodotto"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label for="productImage" class="form-label">Nome File Immagine</label>
+              <input type="text" class="form-control bg-secondary text-light border-0" 
+                     id="productImage" name="productImage" required 
+                     placeholder="es: detergente.jpg">
+              <small class="text-muted">Caricare manualmente in assets/img/products/</small>
+            </div>
+            <div class="col-md-4">
+              <label for="productMarca" class="form-label">Marca</label>
+              <input type="text" class="form-control bg-secondary text-light border-0" 
+                     id="productMarca" name="productMarca" required 
+                     placeholder="es: Ariel">
+            </div>
+            <div class="col-md-4">
+              <label for="productTipo" class="form-label">Tipo</label>
+              <input type="text" class="form-control bg-secondary text-light border-0" 
+                     id="productTipo" name="productTipo" required 
+                     placeholder="es: Detergente">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i>Annulla
+          </button>
+          <button type="button" class="btn btn-success" id="saveProductBtn">
+            <i class="fas fa-save me-1"></i>Salva Prodotto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Bootstrap JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -628,24 +578,6 @@
 
 <!-- Script Valutazione Prodotti -->
 <script type="module" src="../assets/js/admin/valutazione/admin-valutazione.js"></script>
-
-<!-- Script Gestione Prodotti -->
-<script type="module" src="../assets/js/admin/prodotti/admin-prodotti-manager.js"></script>
-
-<script type="module">
-  // Inizializza gestione prodotti quando la tab viene attivata
-  document.addEventListener('DOMContentLoaded', () => {
-    const gestioneProdottiTab = document.getElementById('gestione-prodotti-tab');
-    
-    if (gestioneProdottiTab) {
-      gestioneProdottiTab.addEventListener('shown.bs.tab', async () => {
-        if (window.adminProdottiManager && !window.adminProdottiManager.isInitialized) {
-          await window.adminProdottiManager.init();
-        }
-      });
-    }
-  });
-</script>
 
 <script type="module">
   import { AuthService } from '../assets/js/auth/auth.js';
