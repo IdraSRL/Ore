@@ -46,14 +46,14 @@
   padding: 1rem;
 }
 
-/* Pulsante “Rimuovi” in basso a destra */
+/* Pulsante "Rimuovi" in basso a destra */
 .activity-group .delete-btn {
   position: absolute;
   bottom: 0.75rem;
   right: 0.75rem;
 }
 
-/* Assicura che tutti i campi occupino l’intera larghezza */
+/* Assicura che tutti i campi occupino l'intera larghezza */
 .activity-group .form-control,
 .activity-group .form-select {
   width: 100%;
@@ -783,3 +783,45 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ===== VALUTAZIONE PRODOTTI STYLES ===== */
+.product-image {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.product-image:hover {
+  transform: scale(1.05);
+}
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 10000;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toast-error {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+}
+
+.toast-success {
+  background: linear-gradient(45deg, #10b981, #059669);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
