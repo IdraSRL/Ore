@@ -4,7 +4,10 @@ import {
   collection, 
   getDocs, 
   doc, 
-  getDoc 
+  getDoc,
+  setDoc,
+  deleteDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 class AdminValutazioneManager {
@@ -29,6 +32,12 @@ class AdminValutazioneManager {
         const refreshBtn = document.getElementById('refreshProductsBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.refresh());
+        }
+
+        // Form aggiunta prodotto
+        const saveProductBtn = document.getElementById('saveProductBtn');
+        if (saveProductBtn) {
+            saveProductBtn.addEventListener('click', () => this.handleAddProduct());
         }
 
         // Setup image modal functionality
@@ -117,30 +126,6 @@ class AdminValutazioneManager {
                 });
             });
 
-            // Se non ci sono prodotti, crea dati di default
-            if (this.products.length === 0) {
-                this.products = [
-                    {
-                        id: "detergente-multiuso",
-                        name: "Detergente Multiuso",
-                        description: "Detergente per tutte le superfici",
-                        imageUrl: "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400"
-                    },
-                    {
-                        id: "sgrassatore-cucina", 
-                        name: "Sgrassatore Cucina",
-                        description: "Potente sgrassatore per cucine",
-                        imageUrl: "https://images.pexels.com/photos/4239013/pexels-photo-4239013.jpeg?auto=compress&cs=tinysrgb&w=400"
-                    },
-                    {
-                        id: "detergente-bagno",
-                        name: "Detergente Bagno",
-                        description: "Specifico per sanitari e piastrelle",
-                        imageUrl: "https://images.pexels.com/photos/4239092/pexels-photo-4239092.jpeg?auto=compress&cs=tinysrgb&w=400"
-                    }
-                ];
-            }
-
             console.log('Prodotti caricati per admin dashboard:', this.products.length);
         } catch (error) {
             console.error('Errore nel caricamento prodotti:', error);
@@ -176,6 +161,65 @@ class AdminValutazioneManager {
             console.log('Valutazioni caricate per admin dashboard:', Object.keys(this.ratings).length);
         } catch (error) {
             console.error('Errore nel caricamento valutazioni:', error);
+        }
+    }
+
+    async handleAddProduct() {
+        const form = document.getElementById('addProductForm');
+        const formData = new FormData(form);
+        
+        const productData = {
+            id: formData.get('productId').trim(),
+            name: formData.get('productName').trim(),
+            description: formData.get('productDescription').trim(),
+            imageUrl: `assets/img/products/${formData.get('productImage').trim()}`,
+            tagMarca: formData.get('productMarca').trim(),
+            tagTipo: formData.get('productTipo').trim(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+
+        // Validazione
+        if (!productData.id || !productData.name || !productData.imageUrl || !productData.tagMarca || !productData.tagTipo) {
+            this.showError('Tutti i campi sono obbligatori');
+            return;
+        }
+
+        // Verifica se l'ID esiste già
+        if (this.products.find(p => p.id === productData.id)) {
+            this.showError('Un prodotto con questo ID esiste già');
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, 'Products', productData.id), productData);
+            this.showSuccess('Prodotto aggiunto con successo!');
+            
+            // Chiudi modal e reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+            modal.hide();
+            form.reset();
+            
+            // Ricarica dati
+            await this.loadData();
+            this.renderDashboard();
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            this.showError('Errore nel salvataggio del prodotto');
+        }
+    }
+
+    async deleteProduct(productId) {
+        if (!confirm('Sei sicuro di voler eliminare questo prodotto?')) return;
+
+        try {
+            await deleteDoc(doc(db, 'Products', productId));
+            this.showSuccess('Prodotto eliminato con successo!');
+            await this.loadData();
+            this.renderDashboard();
+        } catch (error) {
+            console.error('Errore nell\'eliminazione:', error);
+            this.showError('Errore nell\'eliminazione del prodotto');
         }
     }
 
@@ -279,7 +323,14 @@ class AdminValutazioneManager {
                         <div>
                             <h6 class="mb-0">${product.name}</h6>
                             <small class="text-muted">${count} valutazioni - Media: ${overallAvg.toFixed(1)}/10</small>
+                            <div class="mt-1">
+                                <span class="badge bg-primary me-1">${product.tagMarca || 'N/A'}</span>
+                                <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
+                            </div>
                         </div>
+                        <button class="btn btn-danger btn-sm ms-auto" onclick="adminValutazioneManager.deleteProduct('${product.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                     <div class="card-body">
                         <div style="height: 250px;">
@@ -384,19 +435,23 @@ class AdminValutazioneManager {
         });
     }
 
+    showSuccess(message) {
+        this.showToast(message, 'success');
+    }
+
     showError(message) {
-        console.error(message);
-        
-        // Mostra toast di errore
+        this.showToast(message, 'error');
+    }
+    
+    showToast(message, type = 'info') {
         const toast = document.createElement('div');
-        toast.className = 'toast-notification toast-error';
+        toast.className = `toast-notification toast-${type}`;
         toast.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
             padding: 1rem 1.5rem;
             border-radius: 8px;
-            background: linear-gradient(45deg, #ef4444, #dc2626);
             color: white;
             font-weight: 500;
             z-index: 10000;
@@ -404,6 +459,14 @@ class AdminValutazioneManager {
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         `;
+        
+        if (type === 'error') {
+            toast.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+        } else if (type === 'success') {
+            toast.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+        } else {
+            toast.style.background = 'linear-gradient(45deg, #6366f1, #4f46e5)';
+        }
         
         toast.textContent = message;
         document.body.appendChild(toast);
@@ -415,6 +478,9 @@ class AdminValutazioneManager {
     }
 }
 
+// Istanza globale
+window.adminValutazioneManager = new AdminValutazioneManager();
+
 // Inizializza quando la tab viene attivata
 document.addEventListener('DOMContentLoaded', () => {
     const valutazioneTab = document.getElementById('valutazione-tab');
@@ -423,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (valutazioneTab) {
         valutazioneTab.addEventListener('shown.bs.tab', async () => {
             if (!valutazioneManager) {
-                valutazioneManager = new AdminValutazioneManager();
+                valutazioneManager = window.adminValutazioneManager;
                 await valutazioneManager.init();
             }
         });

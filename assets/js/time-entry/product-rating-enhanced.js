@@ -61,35 +61,6 @@ class ProductRatingManagerEnhanced {
                 });
             });
 
-            // Se non ci sono prodotti, usa dati di default
-            if (this.products.length === 0) {
-                this.products = [
-                    {
-                        id: "detergente-multiuso",
-                        name: "Detergente Multiuso",
-                        description: "Detergente per tutte le superfici",
-                        imageUrl: "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400",
-                        tagMarca: "Ariel",
-                        tagTipo: "Detergente"
-                    },
-                    {
-                        id: "sgrassatore-cucina", 
-                        name: "Sgrassatore Cucina",
-                        description: "Potente sgrassatore per cucine",
-                        imageUrl: "https://images.pexels.com/photos/4239013/pexels-photo-4239013.jpeg?auto=compress&cs=tinysrgb&w=400",
-                        tagMarca: "Chante Clair",
-                        tagTipo: "Sgrassatore"
-                    },
-                    {
-                        id: "detergente-bagno",
-                        name: "Detergente Bagno",
-                        description: "Specifico per sanitari e piastrelle",
-                        imageUrl: "https://images.pexels.com/photos/4239092/pexels-photo-4239092.jpeg?auto=compress&cs=tinysrgb&w=400",
-                        tagMarca: "Viakal",
-                        tagTipo: "Detergente"
-                    }
-                ];
-            }
 
             this.filteredProducts = [...this.products];
             console.log('Prodotti caricati:', this.products.length);
