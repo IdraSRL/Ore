@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pannello Admin – Bigliettini BnB</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
+  <!-- Stili base -->
+  <link rel="stylesheet" href="../assets/css/style.css?v=1.3.0" />
+  <link rel="stylesheet" href="../assets/css/style_gradimento.css?v=1.3.0" />
+  <link rel="stylesheet" href="../assets/css/style_bnb.css?v=1.3.0" />
+
+  <!-- Override scroll orizzontale nei modal -->
+  <style>
+    .modal-dialog {
+      max-width: 90vw;
+      margin: 1.5rem auto;
+    }
+
+    .modal-content,
+    .modal-body {
+      overflow-x: auto;
+    }
+
+    .modal-body .table-responsive table {
+      width: max-content;
+      min-width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">Pannello Admin</a>
+      <div class="d-flex">
+        <span class="navbar-text me-2 version-display">v1.0.0</span>
+        <span class="navbar-text me-3" id="userDisplay">Admin</span>
+        <button class="btn btn-outline-light btn-sm" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- TABS Amministrazione -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="ore-tab" data-bs-toggle="tab" data-bs-target="#orePane" type="button"
+          role="tab" aria-controls="orePane" aria-selected="true">Riepilogo Ore</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="bnb-tab" data-bs-toggle="tab" data-bs-target="#bnbPane" type="button" role="tab"
+          aria-controls="bnbPane" aria-selected="false">Bigliettini BnB</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="gradimento-tab" data-bs-toggle="tab" data-bs-target="#gradimentoPane" type="button"
+          role="tab" aria-controls="gradimentoPane" aria-selected="false">Gradimento</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="calcolo-tab" data-bs-toggle="tab" data-bs-target="#calcoloPane" type="button"
+          role="tab" aria-controls="calcoloPane" aria-selected="false">Calcolo Biancheria</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#dataPane" type="button" role="tab"
+          aria-controls="dataPane" aria-selected="false">
+          Gestione Data
+        </button>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="collegamenti-tab" data-bs-toggle="tab" href="#collegamenti" role="tab"
+          aria-controls="collegamenti" aria-selected="false">
+          Collegamenti
+        </a>
+      </li>
+    </ul>
+
+
+    <div class="tab-content" id="adminTabsContent">
+      <!-- PANE RIEPILOGO ORE -->
+      <div class="tab-pane fade show active" id="orePane" role="tabpanel" aria-labelledby="ore-tab">
+        <div class="card mb-4 border-secondary">
+          <div class="card-body">
+            <h3 class="card-title mb-4">Riepilogo Ore Dipendenti</h3>
+            <div class="row mb-4">
+              <div class="col-md-5">
+                <label for="employeeSelect" class="form-label">Dipendente</label>
+                <select class="form-select" id="employeeSelect" style="width:100%">
+                </select>
+              </div>
+              <div class="col-md-5">
+                <label for="monthSelect" class="form-label">Mese</label>
+                <select class="form-select" id="monthSelect" style="width:100%"></select>
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" id="exportBtn">Esporta Excel</button>
+              </div>
+            </div>
+            <div id="summaryContainer" class="mt-4">
+              <p class="text-muted">Seleziona un dipendente e un mese per visualizzare i dati.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Dettaglio Giornaliero -->
+        <div class="modal fade" id="dayDetailModal" tabindex="-1" aria-labelledby="dayDetailModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content bg-dark">
+              <div class="modal-header">
+                <h5 class="modal-title" id="dayDetailModalLabel">Dettaglio Giornaliero</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                  aria-label="Chiudi"></button>
+              </div>
+              <div class="modal-body">
+                <div id="dayDetail">
+                  <p class="text-muted">Seleziona un giorno dalla tabella per visualizzare i dettagli.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE BIGLIETTINI BnB -->
+      <div class="tab-pane fade" id="bnbPane" role="tabpanel" aria-labelledby="bnb-tab">
+        <div class="card mb-4 border-secondary">
+          <div class="card-body">
+            <h3 class="card-title mb-4">Elenco Bigliettini BnB</h3>
+            <div class="row mb-3">
+              <div class="col-sm-4">
+                <input type="date" id="bnbFilterDate" class="form-control" required />
+              </div>
+            </div>
+            <div id="bnbEntriesContainer" class="table-responsive">
+              <!-- Qui verranno iniettati gli accordion dei bigliettini -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Generata via JavaScript -->
+    </div>
+  </div>
+
+  <div class="tab-content" id="adminTabsContent">
+
+    <!-- PANE RIEPILOGO ORE -->
+    <div class="tab-pane fade show active" id="orePane" role="tabpanel" aria-labelledby="ore-tab">
+    
+    </div>
+
+    <!-- PANE BIGLIETTINI BnB -->
+    <div class="tab-pane fade" id="bnbPane" role="tabpanel" aria-labelledby="bnb-tab">
+   
+    </div>
+
+<!-- ==== PANE GRADIMENTO ==== -->
+<div class="tab-pane fade" id="gradimentoPane" role="tabpanel" aria-labelledby="gradimento-tab">
+  <!-- Toolbar Filtri & Azioni -->
+  <div class="gr-toolbar d-flex flex-wrap gap-3 mb-3">
+    <div class="gr-filter-group">
+      <label for="gr-month" class="form-label">Mese</label>
+      <select id="gr-month" class="form-select">
+        <option value="all">Tutti i mesi</option>
+      </select>
+    </div>
+    <div class="gr-filter-group">
+      <label for="gr-rating" class="form-label">Valutazione</label>
+      <select id="gr-rating" class="form-select">
+        <option value="all">Tutte</option>
+        <option value="high">Alta (8–10)</option>
+        <option value="medium">Media (5–7)</option>
+        <option value="low">Bassa (1–4)</option>
+      </select>
+    </div>
+    <div class="gr-filter-group">
+      <label for="gr-client" class="form-label">Cliente</label>
+      <select id="gr-client" class="form-select">
+        <option value="all">Tutti i clienti</option>
+      </select>
+    </div>
+    <div class="gr-filter-group flex-grow-1">
+      <label for="gr-email" class="form-label">Cerca</label>
+      <input id="gr-email" type="text" class="form-control" placeholder="Email o nome cliente">
+    </div>
+    <div class="gr-button-group d-flex gap-2 align-items-end">
+      <button id="gr-apply"  class="btn btn-primary">Applica</button>
+      <button id="gr-refresh"class="btn btn-secondary">Aggiorna</button>
+    </div>
+  </div>
+
+  <hr class="gr-divider">
+
+  <!-- Statistiche -->
+  <div class="gr-stats row text-center mb-4">
+    <div class="gr-stat col">
+      <span id="gr-total"   class="h2">0</span>
+      <div>Clienti Totali</div>
+    </div>
+    <div class="gr-stat col">
+      <span id="gr-avg"     class="h2">0.0</span>
+      <div>Valutazione Media</div>
+    </div>
+    <div class="gr-stat col">
+      <span id="gr-monthly" class="h2">0</span>
+      <div>Feedback Mese</div>
+    </div>
+    <div class="gr-stat col">
+      <span id="gr-comments"class="h2">0</span>
+      <div>Con Commenti</div>
+    </div>
+  </div>
+
+  <hr class="gr-divider">
+
+  <!-- Grafici -->
+  <div class="gr-charts row g-4 mb-4">
+    <div class="gr-chart-container col-md-6">
+      <h5>📊 Media per Domanda</h5>
+      <canvas id="gr-bar" class="w-100" height="200"></canvas>
+    </div>
+    <div class="gr-chart-container col-md-6">
+      <h5>📈 Andamento Mensile</h5>
+      <canvas id="gr-line" class="w-100" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Grafici per Cliente -->
+  <div id="gr-client-charts"></div>
+  <hr class="gr-divider">
+
+  <!-- Tabella Feedback -->
+  <div class="gr-table-wrapper table-responsive">
+    <table class="table table-bordered">
+      <thead class="table-light">
+        <tr>
+          <th>Nome Cliente</th>
+          <th>Email</th>
+          <th>Pulizia</th>
+          <th>Prodotti</th>
+          <th>Comunicazione</th>
+          <th>Media</th>
+          <th>Data</th>
+          <th>Commenti</th>
+          <th>Azioni</th>
+        </tr>
+      </thead>
+      <tbody id="gr-body">
+        <tr>
+          <td colspan="9" class="text-center py-5">Caricamento...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Commento -->
+  <div class="modal fade" id="gr-modal" tabindex="-1" aria-labelledby="gr-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="gr-modal-label">Commento Dettagliato</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="gr-modal-text"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dettagli Feedback -->
+  <div class="modal fade" id="gr-detail-modal" tabindex="-1" aria-labelledby="gr-detail-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="gr-detail-modal-label">Dettagli Feedback</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="gr-detail-id">
+          <div class="mb-3">
+            <label for="gr-detail-client-name" class="form-label">Nome Cliente</label>
+            <input type="text" id="gr-detail-client-name" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="gr-detail-email" class="form-label">Email</label>
+            <input type="email" id="gr-detail-email" class="form-control">
+          </div>
+          <p><strong>Mese:</strong> <span id="gr-detail-month"></span></p>
+          <p><strong>Pulizia:</strong> <span id="gr-detail-q1"></span></p>
+          <p><strong>Prodotti:</strong> <span id="gr-detail-q2"></span></p>
+          <p><strong>Comunicazione:</strong> <span id="gr-detail-q3"></span></p>
+          <p><strong>Commento:</strong> <span id="gr-detail-comment"></span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+          <button type="button" class="btn btn-primary" id="gr-detail-save">Salva</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- ==== PANE CALCOLO BIANCHERIA ==== -->
+    <div class="tab-pane fade" id="calcoloPane" role="tabpanel" aria-labelledby="calcolo-tab">
+      <div class="card border-secondary mb-4">
+        <div class="card-body">
+          <h3 class="card-title mb-4">Calcolo Preventivo Biancheria</h3>
+          <form id="calculatorForm" class="row g-3">
+            <div class="col-md-6">
+              <label for="lettiMatrimoniali" class="form-label">Letti Matrimoniali</label>
+              <input type="number" id="lettiMatrimoniali" class="form-control" min="0" />
+            </div>
+            <div class="col-md-6">
+              <label for="lettiSingoli" class="form-label">Letti Singoli</label>
+              <input type="number" id="lettiSingoli" class="form-control" min="0" />
+            </div>
+            <div class="col-md-6">
+              <label for="cucina" class="form-label">Cucine</label>
+              <input type="number" id="cucina" class="form-control" min="0" />
+            </div>
+            <div class="col-md-6">
+              <label for="bagno" class="form-label">Bagni</label>
+              <input type="number" id="bagno" class="form-control" min="0" />
+            </div>
+            <div class="col-md-6">
+              <label for="ore" class="form-label">Ore Necessarie</label>
+              <input type="number" id="ore" class="form-control" step="0.5" min="0" />
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          <h5>Risultato</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Prezzo Finale:</span>
+            <strong id="total_price">€ 0.00</strong>
+          </div>
+          <div id="hiddenResults" class="d-none">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Costo Biancheria:</span><span id="biancheriaTOT">0</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Costo Personale:</span><span id="przPersonale">0</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Margine:</span><span id="margine">0</span>
+            </div>
+          </div>
+          <div class="text-center mt-3">
+            <button id="toggleVisibility" class="btn btn-outline-secondary btn-sm">Mostra Dettagli</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==== PANE GESTIONE DATA ==== -->
+    <div class="tab-pane fade" id="dataPane" role="tabpanel" aria-labelledby="data-tab">
+      <div class="container py-4">
+        <div class="d-flex mb-3">
+          <button id="add-group" class="btn btn-primary me-2">+ Nuovo Gruppo</button>
+        </div>
+        <!-- Nav tabs dinamiche -->
+        <ul class="nav nav-tabs" id="groupTabs" role="tablist"></ul>
+        <!-- Tab panes dinamiche -->
+        <div class="tab-content border p-3" id="groupTabContent"></div>
+      </div>
+    </div>
+
+    <!-- ==== PANE COLLEGAMENTI ==== -->
+
+    <div class="tab-pane fade" id="collegamenti" role="tabpanel" aria-labelledby="collegamenti-tab">
+      <div class="p-3">
+        <h5>Collegamenti rapidi</h5>
+        <div class="d-grid gap-2">
+          <a href="https://docs.google.com/spreadsheets/d/16ZgOZv5jgoHxMWNfbDvdbk5aSm6OV14Gmkak1Hi8hRA/edit?pli=1&gid=0#gid=0" target="_blank" class="btn btn-primary">Foglio Lorenza</a>
+          <a href="https://docs.google.com/spreadsheets/d/1TfRgNy1wmKBLGciopQiU7d6I1A6jMjx3XI-SuYF10cA/edit?pli=1&gid=0#gid=0" target="_blank" class="btn btn-secondary">Foglio Appartamenti</a>
+          <a href="https://docs.google.com/spreadsheets/d/1znemHbbA-KMphOfyksohR07K6OXkksL0x6eXFiUD4UA/edit?gid=0#gid=0" target="_blank" class="btn btn-success">Foglio BnB</a>
+          <a href="https://docs.google.com/spreadsheets/d/1shvFnqNWlFhaFOKiGQN4REKwFwwK4e9_18KeMIkpDlQ/edit?gid=1535185113#gid=1535185113" target="_blank" class="btn btn-info">Foglio Bigliettini</a>
+        </div>
+      </div>
+    </div>
+
+    
+  </div>
+
+
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>Caricamento dati...</p>
+    </div>
+  </div>
+
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Firebase + i tuoi script -->
+<!-- Firebase configs -->
+<script type="module" src="../assets/js/common/firebase-config.js?v=1.3.0"></script>
+<script type="module" src="../assets/js/common/firebase-config_gradimento.js?v=1.3.0"></script>
+
+<!-- Auth & Firestore service -->
+<script type="module" src="../assets/js/auth/auth.js?v=1.3.0"></script>
+<script type="module" src="../assets/js/common/firestore-service.js?v=1.3.0"></script>
+
+<!-- Admin core scripts -->
+<script type="module" src="../assets/js/admin/common/admin.js?v=1.3.0"></script>
+<script type="module" src="../assets/js/admin/common/admin-data.js?v=1.3.0"></script>
+
+<!-- Tab “Gradimento” -->
+<script type="module" src="../assets/js/admin/gradimento/admin_gradimento.js?v=1.3.0"></script>
+
+<!-- Utility -->
+<script type="module" src="../assets/js/common/preventivo.js?v=1.3.0"></script>
+<script src="../assets/js/common/input-date-polyfill.js?v=1.3.0"></script>
+
+<!-- Version Script -->
+<script type="module" src="../assets/js/common/version.js?v=1.3.0"></script>
+
+<!-- Plugin esterni -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+
+<script type="module">
+  import { AuthService } from '../assets/js/auth/auth.js?v=1.3.0';
+  import { loadBnbEntries } from '../assets/js/admin/bnb/admin-bnb.js?v=1.3.0';
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Se non è admin, non facciamo nulla
+    if (!AuthService.checkAuth() || !AuthService.isAdmin()) return;
+
+    const dateInput = document.getElementById('bnbFilterDate');
+    const container = document.getElementById('bnbEntriesContainer');
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Valore iniziale e primo caricamento
+    dateInput.value = today;
+    await loadBnbEntries(today, container);
+
+    // Al cambio di data, ricarica automaticamente
+    dateInput.addEventListener('change', async () => {
+      const d = dateInput.value;
+      if (!d) return;
+      container.innerHTML = '<p>Caricamento…</p>';
+      await loadBnbEntries(d, container);
+    });
+  });
+</script>
+
+
+</body>
+
+</html>
