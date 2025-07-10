@@ -1,0 +1,447 @@
+// admin-valutazione.js - Gestione valutazioni prodotti nel pannello admin
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Configurazione Firebase per valutazioni prodotti
+const firebaseConfig = {
+    apiKey: "AIzaSyCcq4vF4yGXOx3XVd30Mhqh4bfF2z8O7XU",
+    authDomain: "oredipendenti-81442.firebaseapp.com",
+    projectId: "oredipendenti-81442",
+    storageBucket: "oredipendenti-81442.firebasestorage.app",
+    messagingSenderId: "605987945448",
+    appId: "1:605987945448:web:17d89a5f410c07b464025d"
+};
+
+// Inizializza Firebase per valutazioni
+const app = initializeApp(firebaseConfig, 'valutazioni');
+const db = getFirestore(app);
+
+class AdminValutazioneManager {
+    constructor() {
+        this.products = [];
+        this.ratings = {};
+        this.charts = {};
+        this.isInitialized = false;
+    }
+
+    async init() {
+        if (this.isInitialized) return;
+        
+        console.log('Inizializzazione Admin Valutazione Prodotti...');
+        this.setupEventListeners();
+        await this.loadData();
+        this.renderDashboard();
+        this.isInitialized = true;
+    }
+
+    setupEventListeners() {
+        const refreshBtn = document.getElementById('refreshProductsBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refresh());
+        }
+
+        // Setup image modal functionality
+        this.setupImageModal();
+    }
+
+    setupImageModal() {
+        // Riutilizza la logica del modal per le immagini
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('product-image') || e.target.classList.contains('product-detail-image')) {
+                this.openImageModal(e.target.src, e.target.alt);
+            }
+        });
+
+        // Crea modal se non esiste
+        if (!document.getElementById('productImageModal')) {
+            const modal = document.createElement('div');
+            modal.id = 'productImageModal';
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title text-light">Immagine Prodotto</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img id="modalProductImage" class="img-fluid" style="max-height: 70vh;">
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+    }
+
+    openImageModal(src, alt) {
+        const modal = document.getElementById('productImageModal');
+        const modalImg = document.getElementById('modalProductImage');
+        
+        if (modal && modalImg) {
+            modalImg.src = src;
+            modalImg.alt = alt;
+            new bootstrap.Modal(modal).show();
+        }
+    }
+
+    async refresh() {
+        const refreshBtn = document.getElementById('refreshProductsBtn');
+        if (refreshBtn) {
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Aggiornamento...';
+            refreshBtn.disabled = true;
+
+            await this.loadData();
+            this.renderDashboard();
+
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+        }
+    }
+
+    async loadData() {
+        try {
+            await this.loadProducts();
+            await this.loadRatings();
+        } catch (error) {
+            console.error('Errore nel caricamento dati valutazioni:', error);
+            this.showError('Errore nel caricamento dei dati valutazioni.');
+        }
+    }
+
+    async loadProducts() {
+        try {
+            console.log('Caricamento prodotti per admin dashboard...');
+            
+            // Prova a caricare dalla subcollection
+            const productsRef = collection(db, 'Data', 'products', 'items');
+            const querySnapshot = await getDocs(productsRef);
+            
+            this.products = [];
+            querySnapshot.forEach((doc) => {
+                this.products.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            // Se non ci sono prodotti, prova struttura alternativa
+            if (this.products.length === 0) {
+                const docRef = doc(db, 'Data', 'products');
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.products && Array.isArray(data.products)) {
+                        this.products = data.products.map((product, index) => ({
+                            id: index.toString(),
+                            ...product
+                        }));
+                    }
+                }
+            }
+
+            // Se ancora non ci sono prodotti, crea dati di test
+            if (this.products.length === 0) {
+                this.products = [
+                    {
+                        id: "1",
+                        name: "Detergente Multiuso",
+                        description: "Detergente per tutte le superfici",
+                        imageUrl: "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400"
+                    },
+                    {
+                        id: "2", 
+                        name: "Sgrassatore Cucina",
+                        description: "Potente sgrassatore per cucine",
+                        imageUrl: "https://images.pexels.com/photos/4239013/pexels-photo-4239013.jpeg?auto=compress&cs=tinysrgb&w=400"
+                    },
+                    {
+                        id: "3",
+                        name: "Detergente Bagno",
+                        description: "Specifico per sanitari e piastrelle",
+                        imageUrl: "https://images.pexels.com/photos/4239092/pexels-photo-4239092.jpeg?auto=compress&cs=tinysrgb&w=400"
+                    }
+                ];
+            }
+
+            console.log('Prodotti caricati per admin dashboard:', this.products.length);
+        } catch (error) {
+            console.error('Errore nel caricamento prodotti:', error);
+        }
+    }
+
+    async loadRatings() {
+        this.ratings = {};
+        
+        try {
+            console.log('Caricamento valutazioni per admin dashboard...');
+            
+            for (const product of this.products) {
+                try {
+                    const ratingsRef = collection(db, 'Data', 'ratings', product.id);
+                    const querySnapshot = await getDocs(ratingsRef);
+                    
+                    this.ratings[product.id] = [];
+                    querySnapshot.forEach((doc) => {
+                        this.ratings[product.id].push(doc.data());
+                    });
+                } catch (error) {
+                    console.log(`Nessuna valutazione per prodotto ${product.id}`);
+                    this.ratings[product.id] = [];
+                }
+            }
+            
+            console.log('Valutazioni caricate per admin dashboard:', Object.keys(this.ratings).length);
+        } catch (error) {
+            console.error('Errore nel caricamento valutazioni:', error);
+        }
+    }
+
+    renderDashboard() {
+        const loadingElement = document.getElementById('loadingProductsMessage');
+        const dashboardContent = document.getElementById('dashboardProductsContent');
+        const noDataElement = document.getElementById('noProductsData');
+
+        if (loadingElement) loadingElement.style.display = 'none';
+
+        const hasData = this.products.length > 0 && Object.keys(this.ratings).some(key => this.ratings[key].length > 0);
+
+        if (!hasData) {
+            if (noDataElement) noDataElement.style.display = 'block';
+            if (dashboardContent) dashboardContent.style.display = 'none';
+            return;
+        }
+
+        if (noDataElement) noDataElement.style.display = 'none';
+        if (dashboardContent) dashboardContent.style.display = 'block';
+
+        this.renderStats();
+        this.renderProductCharts();
+    }
+
+    renderStats() {
+        const totalProducts = this.products.length;
+        let totalRatings = 0;
+        let totalScore = 0;
+        let scoreCount = 0;
+
+        Object.values(this.ratings).forEach(productRatings => {
+            totalRatings += productRatings.length;
+            productRatings.forEach(rating => {
+                totalScore += rating.efficacia + rating.profumo + rating.facilita;
+                scoreCount += 3;
+            });
+        });
+
+        const overallAverage = scoreCount > 0 ? (totalScore / scoreCount).toFixed(1) : 0;
+
+        const totalProductsEl = document.getElementById('totalProductsCount');
+        const totalRatingsEl = document.getElementById('totalRatingsCount');
+        const overallAverageEl = document.getElementById('overallAverageScore');
+        const lastUpdateEl = document.getElementById('lastUpdateTime');
+
+        if (totalProductsEl) totalProductsEl.textContent = totalProducts;
+        if (totalRatingsEl) totalRatingsEl.textContent = totalRatings;
+        if (overallAverageEl) overallAverageEl.textContent = overallAverage;
+        if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleString('it-IT');
+    }
+
+    renderProductCharts() {
+        const chartsContainer = document.getElementById('productsChartsContainer');
+        if (!chartsContainer) return;
+
+        // Pulisci container esistente
+        chartsContainer.innerHTML = '';
+
+        // Crea un grafico per ogni prodotto
+        this.products.forEach(product => {
+            const productRatings = this.ratings[product.id] || [];
+            if (productRatings.length === 0) return;
+
+            // Calcola medie per questo prodotto
+            let efficaciaSum = 0, profumoSum = 0, facilitaSum = 0;
+            productRatings.forEach(rating => {
+                efficaciaSum += rating.efficacia;
+                profumoSum += rating.profumo;
+                facilitaSum += rating.facilita;
+            });
+
+            const count = productRatings.length;
+            const efficaciaAvg = (efficaciaSum / count).toFixed(1);
+            const profumoAvg = (profumoSum / count).toFixed(1);
+            const facilitaAvg = (facilitaSum / count).toFixed(1);
+
+            // Calcola media generale per colorazione
+            const overallAvg = (parseFloat(efficaciaAvg) + parseFloat(profumoAvg) + parseFloat(facilitaAvg)) / 3;
+            
+            // Determina classe di rating
+            let ratingClass = '';
+            if (overallAvg < 4) {
+                ratingClass = 'border-danger';
+            } else if (overallAvg < 7) {
+                ratingClass = 'border-warning';
+            } else {
+                ratingClass = 'border-success';
+            }
+
+            // Crea card del grafico
+            const chartCard = document.createElement('div');
+            chartCard.className = 'col-lg-6 col-xl-4';
+            chartCard.innerHTML = `
+                <div class="card bg-secondary ${ratingClass} h-100">
+                    <div class="card-header bg-dark text-light d-flex align-items-center">
+                        <img src="${product.imageUrl || 'https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'}" 
+                             alt="${product.name}" class="product-image me-3" 
+                             style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
+                             onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
+                        <div>
+                            <h6 class="mb-0">${product.name}</h6>
+                            <small class="text-muted">${count} valutazioni - Media: ${overallAvg.toFixed(1)}/10</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 250px;">
+                            <canvas id="chart-${product.id}"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            chartsContainer.appendChild(chartCard);
+
+            // Crea grafico
+            this.createProductChart(product.id, {
+                efficacia: parseFloat(efficaciaAvg),
+                profumo: parseFloat(profumoAvg),
+                facilita: parseFloat(facilitaAvg)
+            });
+        });
+    }
+
+    createProductChart(productId, averages) {
+        const canvas = document.getElementById(`chart-${productId}`);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        // Distruggi grafico esistente se presente
+        if (this.charts[productId]) {
+            this.charts[productId].destroy();
+        }
+
+        this.charts[productId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Efficacia', 'Profumo', 'Facilità d\'uso'],
+                datasets: [{
+                    label: 'Media Valutazioni',
+                    data: [averages.efficacia, averages.profumo, averages.facilita],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(16, 185, 129, 0.8)', 
+                        'rgba(245, 158, 11, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(99, 102, 241, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(245, 158, 11, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#f1f5f9',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.y + '/10';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.3)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.3)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    showError(message) {
+        console.error(message);
+        
+        // Mostra toast di errore
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification toast-error';
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+}
+
+// Inizializza quando la tab viene attivata
+document.addEventListener('DOMContentLoaded', () => {
+    const valutazioneTab = document.getElementById('valutazione-tab');
+    let valutazioneManager = null;
+
+    if (valutazioneTab) {
+        valutazioneTab.addEventListener('shown.bs.tab', async () => {
+            if (!valutazioneManager) {
+                valutazioneManager = new AdminValutazioneManager();
+                await valutazioneManager.init();
+            }
+        });
+    }
+});
+
+export { AdminValutazioneManager };
