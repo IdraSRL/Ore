@@ -80,3 +80,44 @@ Per aggiornare la versione:
 - Calcolo preventivi biancheria
 - Gestione appartamenti e allarmi
 - Pannello amministrativo completo
+- Sistema di valutazione prodotti con filtri avanzati
+- Gestione prodotti tramite database
+
+## Sistema di Valutazione Prodotti
+
+### Struttura Database
+I prodotti sono memorizzati nella collezione `Products` di Firestore con la seguente struttura:
+```json
+{
+  "id": "detergente-multiuso",
+  "name": "Detergente Multiuso", 
+  "description": "Detergente per tutte le superfici",
+  "imageUrl": "assets/img/products/detergente.jpg",
+  "tagMarca": "Ariel",
+  "tagTipo": "Detergente",
+  "createdAt": "timestamp",
+  "updatedAt": "timestamp"
+}
+```
+
+### Gestione Immagini
+Le immagini dei prodotti devono essere caricate manualmente nella cartella `assets/img/products/`.
+Il sistema include un'immagine placeholder per prodotti senza immagine.
+
+### Filtri Disponibili
+- **Marca**: Filtra per tag-marca del prodotto
+- **Tipo**: Filtra per tag-tipo del prodotto  
+- **Ricerca testuale**: Cerca nel nome del prodotto
+- I filtri possono essere combinati tra loro
+
+### Pannello Admin
+- Aggiunta nuovi prodotti tramite form
+- Visualizzazione prodotti esistenti con filtri
+- Eliminazione prodotti
+- Gestione completa dei metadati
+
+### Pannello Dipendenti
+- Valutazione prodotti su 3 criteri (Efficacia, Profumo, Facilità d'uso)
+- Filtri per marca, tipo e ricerca testuale
+- Visualizzazione stato valutazioni (già valutato/da valutare)
+- Sistema di rating con slider interattivi
