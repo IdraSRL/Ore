@@ -1,21 +1,14 @@
 // product-rating.js v=1.0.0 - Sistema di valutazione prodotti integrato in timeEntry
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { db } from "../common/firebase-config.js";
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDocs, 
+  getDoc,
+  serverTimestamp 
+} from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
 import { AuthService } from "../auth/auth.js?v=1.0.0";
-
-// Configurazione Firebase per valutazioni prodotti
-const firebaseConfig = {
-    apiKey: "AIzaSyCcq4vF4yGXOx3XVd30Mhqh4bfF2z8O7XU",
-    authDomain: "oredipendenti-81442.firebaseapp.com",
-    projectId: "oredipendenti-81442",
-    storageBucket: "oredipendenti-81442.firebasestorage.app",
-    messagingSenderId: "605987945448",
-    appId: "1:605987945448:web:17d89a5f410c07b464025d"
-};
-
-// Inizializza Firebase per valutazioni
-const app = initializeApp(firebaseConfig, 'valutazioni');
-const db = getFirestore(app);
 
 class ProductRatingManager {
     constructor() {
@@ -56,51 +49,41 @@ class ProductRatingManager {
         try {
             console.log('Caricamento prodotti...');
             
-            // Prova a caricare dalla subcollection
-            const productsRef = collection(db, 'Data', 'products', 'items');
-            const querySnapshot = await getDocs(productsRef);
+            // Carica dalla struttura unificata Data/products
+            const docRef = doc(db, 'Data', 'products');
+            const docSnap = await getDoc(docRef);
             
             this.products = [];
-            querySnapshot.forEach((doc) => {
-                this.products.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-
-            // Se non ci sono prodotti, prova struttura alternativa
-            if (this.products.length === 0) {
-                const docRef = doc(db, 'Data', 'products');
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.products && Array.isArray(data.products)) {
-                        this.products = data.products.map((product, index) => ({
-                            id: index.toString(),
-                            ...product
-                        }));
-                    }
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.products && Array.isArray(data.products)) {
+                    this.products = data.products.map((product, index) => ({
+                        id: product.id || index.toString(),
+                        name: product.name || `Prodotto ${index + 1}`,
+                        description: product.description || '',
+                        imageUrl: product.imageUrl || 'https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400'
+                    }));
                 }
             }
 
-            // Se ancora non ci sono prodotti, crea dati di test
+            // Se non ci sono prodotti, crea dati di default
             if (this.products.length === 0) {
                 this.products = [
                     {
-                        id: "1",
+                        id: "detergente-multiuso",
                         name: "Detergente Multiuso",
                         description: "Detergente per tutte le superfici",
                         imageUrl: "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400"
                     },
                     {
-                        id: "2", 
+                        id: "sgrassatore-cucina", 
                         name: "Sgrassatore Cucina",
                         description: "Potente sgrassatore per cucine",
                         imageUrl: "https://images.pexels.com/photos/4239013/pexels-photo-4239013.jpeg?auto=compress&cs=tinysrgb&w=400"
                     },
                     {
-                        id: "3",
+                        id: "detergente-bagno",
                         name: "Detergente Bagno",
                         description: "Specifico per sanitari e piastrelle",
                         imageUrl: "https://images.pexels.com/photos/4239092/pexels-photo-4239092.jpeg?auto=compress&cs=tinysrgb&w=400"
@@ -120,12 +103,10 @@ class ProductRatingManager {
             console.log('Caricamento valutazioni utente...');
             this.ratings = {};
             
-            // Usa il nome utente come chiave per le valutazioni
-            const userKey = this.currentUser.replace(/\s+/g, '_');
-            
             for (const product of this.products) {
                 try {
-                    const ratingRef = doc(db, 'Data', 'ratings', product.id, userKey);
+                    // Struttura semplificata: ProductRatings/{productId}/ratings/{userId}
+                    const ratingRef = doc(db, 'ProductRatings', product.id, 'ratings', this.currentUser);
                     const ratingSnap = await getDoc(ratingRef);
                     
                     if (ratingSnap.exists()) {
@@ -192,7 +173,7 @@ class ProductRatingManager {
         cardContainer.innerHTML = `
             <div class="card bg-dark ${ratingClass} h-100">
                 <div class="card-header bg-secondary text-light d-flex align-items-center">
-                    <img src="${product.imageUrl || 'https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'}" 
+                    <img src="${product.imageUrl}" 
                          alt="${product.name}" class="product-image me-3" 
                          style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
                          onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
@@ -305,14 +286,15 @@ class ProductRatingManager {
                 efficacia,
                 profumo,
                 facilita,
-                timestamp: new Date().toISOString(),
-                employeeName: this.currentUser
+                timestamp: serverTimestamp(),
+                employeeName: this.currentUser,
+                productId: productId
             };
 
             console.log('Salvataggio valutazione:', rating);
 
-            const userKey = this.currentUser.replace(/\s+/g, '_');
-            const ratingRef = doc(db, 'Data', 'ratings', productId, userKey);
+            // Salva in ProductRatings/{productId}/ratings/{userId}
+            const ratingRef = doc(db, 'ProductRatings', productId, 'ratings', this.currentUser);
             await setDoc(ratingRef, rating);
             
             // Update local ratings
@@ -331,46 +313,22 @@ class ProductRatingManager {
     }
 
     showSuccess(message) {
-        // Crea toast di successo
-        const toast = document.createElement('div');
-        toast.className = 'toast-notification toast-success';
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            background: linear-gradient(45deg, #10b981, #059669);
-            color: white;
-            font-weight: 500;
-            z-index: 10000;
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        `;
-        
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.animation = 'slideOutRight 0.3s ease-in';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        this.showToast(message, 'success');
     }
 
     showError(message) {
-        console.error(message);
-        
-        // Crea toast di errore
+        this.showToast(message, 'error');
+    }
+    
+    showToast(message, type = 'info') {
         const toast = document.createElement('div');
-        toast.className = 'toast-notification toast-error';
+        toast.className = `toast-notification toast-${type}`;
         toast.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
             padding: 1rem 1.5rem;
             border-radius: 8px;
-            background: linear-gradient(45deg, #ef4444, #dc2626);
             color: white;
             font-weight: 500;
             z-index: 10000;
@@ -378,6 +336,14 @@ class ProductRatingManager {
             max-width: 300px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         `;
+        
+        if (type === 'error') {
+            toast.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+        } else if (type === 'success') {
+            toast.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+        } else {
+            toast.style.background = 'linear-gradient(45deg, #6366f1, #4f46e5)';
+        }
         
         toast.textContent = message;
         document.body.appendChild(toast);

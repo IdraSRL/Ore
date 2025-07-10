@@ -1,20 +1,11 @@
 // admin-valutazione.js - Gestione valutazioni prodotti nel pannello admin
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// Configurazione Firebase per valutazioni prodotti
-const firebaseConfig = {
-    apiKey: "AIzaSyCcq4vF4yGXOx3XVd30Mhqh4bfF2z8O7XU",
-    authDomain: "oredipendenti-81442.firebaseapp.com",
-    projectId: "oredipendenti-81442",
-    storageBucket: "oredipendenti-81442.firebasestorage.app",
-    messagingSenderId: "605987945448",
-    appId: "1:605987945448:web:17d89a5f410c07b464025d"
-};
-
-// Inizializza Firebase per valutazioni
-const app = initializeApp(firebaseConfig, 'valutazioni');
-const db = getFirestore(app);
+import { db } from "../../common/firebase-config.js";
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  getDoc 
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 class AdminValutazioneManager {
     constructor() {
@@ -114,51 +105,41 @@ class AdminValutazioneManager {
         try {
             console.log('Caricamento prodotti per admin dashboard...');
             
-            // Prova a caricare dalla subcollection
-            const productsRef = collection(db, 'Data', 'products', 'items');
-            const querySnapshot = await getDocs(productsRef);
+            // Carica dalla struttura unificata Data/products
+            const docRef = doc(db, 'Data', 'products');
+            const docSnap = await getDoc(docRef);
             
             this.products = [];
-            querySnapshot.forEach((doc) => {
-                this.products.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-
-            // Se non ci sono prodotti, prova struttura alternativa
-            if (this.products.length === 0) {
-                const docRef = doc(db, 'Data', 'products');
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.products && Array.isArray(data.products)) {
-                        this.products = data.products.map((product, index) => ({
-                            id: index.toString(),
-                            ...product
-                        }));
-                    }
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.products && Array.isArray(data.products)) {
+                    this.products = data.products.map((product, index) => ({
+                        id: product.id || index.toString(),
+                        name: product.name || `Prodotto ${index + 1}`,
+                        description: product.description || '',
+                        imageUrl: product.imageUrl || 'https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400'
+                    }));
                 }
             }
 
-            // Se ancora non ci sono prodotti, crea dati di test
+            // Se non ci sono prodotti, crea dati di default
             if (this.products.length === 0) {
                 this.products = [
                     {
-                        id: "1",
+                        id: "detergente-multiuso",
                         name: "Detergente Multiuso",
                         description: "Detergente per tutte le superfici",
                         imageUrl: "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400"
                     },
                     {
-                        id: "2", 
+                        id: "sgrassatore-cucina", 
                         name: "Sgrassatore Cucina",
                         description: "Potente sgrassatore per cucine",
                         imageUrl: "https://images.pexels.com/photos/4239013/pexels-photo-4239013.jpeg?auto=compress&cs=tinysrgb&w=400"
                     },
                     {
-                        id: "3",
+                        id: "detergente-bagno",
                         name: "Detergente Bagno",
                         description: "Specifico per sanitari e piastrelle",
                         imageUrl: "https://images.pexels.com/photos/4239092/pexels-photo-4239092.jpeg?auto=compress&cs=tinysrgb&w=400"
@@ -180,12 +161,17 @@ class AdminValutazioneManager {
             
             for (const product of this.products) {
                 try {
-                    const ratingsRef = collection(db, 'Data', 'ratings', product.id);
+                    // Carica tutte le valutazioni per questo prodotto
+                    const ratingsRef = collection(db, 'ProductRatings', product.id, 'ratings');
                     const querySnapshot = await getDocs(ratingsRef);
                     
                     this.ratings[product.id] = [];
                     querySnapshot.forEach((doc) => {
-                        this.ratings[product.id].push(doc.data());
+                        const data = doc.data();
+                        this.ratings[product.id].push({
+                            userId: doc.id,
+                            ...data
+                        });
                     });
                 } catch (error) {
                     console.log(`Nessuna valutazione per prodotto ${product.id}`);
@@ -292,7 +278,7 @@ class AdminValutazioneManager {
             chartCard.innerHTML = `
                 <div class="card bg-secondary ${ratingClass} h-100">
                     <div class="card-header bg-dark text-light d-flex align-items-center">
-                        <img src="${product.imageUrl || 'https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'}" 
+                        <img src="${product.imageUrl}" 
                              alt="${product.name}" class="product-image me-3" 
                              style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
                              onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
@@ -304,6 +290,12 @@ class AdminValutazioneManager {
                     <div class="card-body">
                         <div style="height: 250px;">
                             <canvas id="chart-${product.id}"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <h6 class="text-light">Valutazioni per dipendente:</h6>
+                            <div class="small text-muted">
+                                ${productRatings.map(r => `<div>${r.employeeName}: ${((r.efficacia + r.profumo + r.facilita) / 3).toFixed(1)}/10</div>`).join('')}
+                            </div>
                         </div>
                     </div>
                 </div>
