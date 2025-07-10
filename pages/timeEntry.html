@@ -670,6 +670,41 @@
               <span id="userNameProdotti" class="small text-light">Benvenuto!</span>
             </div>
             
+            <!-- Filtri -->
+            <div class="card bg-dark border-info mb-3">
+              <div class="card-header bg-info text-dark py-2">
+                <h6 class="mb-0">
+                  <i class="fas fa-filter me-2"></i>Filtri
+                </h6>
+              </div>
+              <div class="card-body p-2">
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <label for="marcaFilterUser" class="form-label small">Marca</label>
+                    <select class="form-select form-select-sm bg-secondary text-light border-0" id="marcaFilterUser">
+                      <option value="">Tutte le marche</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="tipoFilterUser" class="form-label small">Tipo</label>
+                    <select class="form-select form-select-sm bg-secondary text-light border-0" id="tipoFilterUser">
+                      <option value="">Tutti i tipi</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="productSearchUser" class="form-label small">Cerca</label>
+                    <input type="text" class="form-control form-control-sm bg-secondary text-light border-0" 
+                           id="productSearchUser" placeholder="Cerca prodotto...">
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button id="resetFiltersUser" class="btn btn-outline-warning btn-sm w-100">
+                      <i class="fas fa-undo"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div id="loadingProductsMessage" class="text-center py-4">
               <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Caricamento...</span>
@@ -724,7 +759,7 @@
 <script type="module" src="../assets/js/admin/bnb/bnb-form.js"></script>
 
 <!-- Product Rating Script -->
-<script type="module" src="../assets/js/time-entry/product-rating.js"></script>
+<script type="module" src="../assets/js/time-entry/product-rating-enhanced.js"></script>
 
 <!-- Inizializzazione BnB tabs -->
 <script type="module">

@@ -105,23 +105,17 @@ class AdminValutazioneManager {
         try {
             console.log('Caricamento prodotti per admin dashboard...');
             
-            // Carica dalla struttura unificata Data/products
-            const docRef = doc(db, 'Data', 'products');
-            const docSnap = await getDoc(docRef);
+            // Carica dalla collezione Products
+            const querySnapshot = await getDocs(collection(db, 'Products'));
             
             this.products = [];
             
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.products && Array.isArray(data.products)) {
-                    this.products = data.products.map((product, index) => ({
-                        id: product.id || index.toString(),
-                        name: product.name || `Prodotto ${index + 1}`,
-                        description: product.description || '',
-                        imageUrl: product.imageUrl || 'https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=400'
-                    }));
-                }
-            }
+            querySnapshot.forEach((doc) => {
+                this.products.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
 
             // Se non ci sono prodotti, crea dati di default
             if (this.products.length === 0) {
