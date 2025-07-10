@@ -19,9 +19,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export const FirestoreService = {
-  /**
-   * Restituisce l'elenco di dipendenti dal documento 'employees' in collezione 'Data'
-   */
   async getEmployees() {
     const ref = doc(db, 'Data', 'employees');
     const snap = await getDoc(ref);
@@ -32,9 +29,6 @@ export const FirestoreService = {
     return [];
   },
 
-  /**
-   * Salva i dati giornalieri per un dipendente
-   */
   async saveEmployeeDay(username, date, data) {
     try {
       const employeeId = username.replaceAll(' ', '_');
@@ -47,9 +41,6 @@ export const FirestoreService = {
     }
   },
 
-  /**
-   * Recupera i dati di un singolo giorno per un dipendente
-   */
   async getEmployeeDay(username, date) {
     try {
       const employeeId = username.replaceAll(' ', '_');
@@ -65,9 +56,6 @@ export const FirestoreService = {
     }
   },
 
-  /**
-   * Recupera tutti i dati del mese per un singolo dipendente
-   */
   async getEmployeeMonth(username, year, month) {
     try {
       const employeeId = username.replaceAll(' ', '_');
@@ -90,9 +78,6 @@ export const FirestoreService = {
     }
   },
 
-  /**
-   * Recupera i dati di tutti i dipendenti per un mese
-   */
   async getAllEmployeesMonth(year, month) {
     try {
       const allData   = {};
@@ -113,9 +98,6 @@ for (const emp of employees) {
     }
   },
 
-  /**
-   * Recupera tutte le attività (cronologiche) di un dipendente
-   */
   async getAllEmployeeActivities(username) {
     try {
       const employeeId = username.replaceAll(' ', '_');
@@ -134,9 +116,6 @@ for (const emp of employees) {
   }
 };
 
-/**
- * Named export per leggere l’intera collezione come array di documenti
- */
 export async function getCollection(collName) {
   const colRef = collection(db, collName);
   const snap   = await getDocs(colRef);
@@ -147,9 +126,6 @@ export async function getCollection(collName) {
   return results;
 }
 
-/**
- * Named export per creare/aggiornare un documento in merge
- */
 export async function updateDoc(collName, docId, data) {
   const docRef = doc(db, collName, docId);
   await setDoc(docRef, data, { merge: true });

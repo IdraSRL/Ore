@@ -1,6 +1,4 @@
-// utils.js v1.0
 
-// utils.js – funzioni comuni centralizzate
 
 
 export function formatISO(date) {

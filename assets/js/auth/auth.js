@@ -1,5 +1,3 @@
-// auth.js v1.0
-// assets/js/auth.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 import {
   getFirestore,
@@ -8,7 +6,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 import { firebaseConfig } from "../common/firebase-config.js";
 
-// Init Firebase
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
@@ -86,7 +83,6 @@ export const AuthService = {
     return sessionStorage.getItem("loggedUser");
   },
 
-  // init dipendenti
   async initLogin(formId, selectId, pwdInputId, messageId) {
   if (this.checkAuth()) {
     window.location.href = this.isAdmin() ? "admin.html" : "timeEntry.html";
@@ -96,10 +92,8 @@ export const AuthService = {
   const employees = await this.loadEmployees();
   const sel       = document.getElementById(selectId);
 
-  // 1) Pulisci la select prima di popolarla
   sel.innerHTML = '<option value="">Seleziona un dipendente</option>';
 
-  // 2) Popola la select con i dipendenti
   employees
     .sort((a, b) => a.name.localeCompare(b.name, "it"))
     .forEach(emp => {
@@ -109,7 +103,6 @@ export const AuthService = {
       sel.appendChild(o);
     });
 
-  // 3) Imposta il listener sul form
   const form = document.getElementById(formId);
   const msg  = document.getElementById(messageId);
 
@@ -130,7 +123,6 @@ export const AuthService = {
 },
 
 
-  // init admin
   async initAdminLogin(formId, pwdInputId, messageId) {
     if (this.checkAuth() && this.isAdmin()) {
       window.location.href = "admin.html";
