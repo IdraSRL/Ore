@@ -48,7 +48,6 @@
 
 /* Pulsante "Rimuovi" in basso a destra */
 .activity-group .delete-btn {
-  position: absolute;
   bottom: 0.75rem;
   right: 0.75rem;
 }
