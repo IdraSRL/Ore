@@ -349,19 +349,39 @@ class AdminValutazioneManager {
     }
 
     async uploadProductImage(file, productId) {
-        // Verifica se il file API esiste prima di tentare l'upload
+        console.log('🔄 [GRADIMENTO] Iniziando upload immagine per prodotto:', productId);
+        console.log('📁 [GRADIMENTO] File selezionato:', file.name, 'Dimensione:', file.size, 'Tipo:', file.type);
+        
+        // Determina il percorso corretto dell'API
+        let apiPath;
+        if (window.location.pathname.includes('/pages/')) {
+            apiPath = '../api/upload-product-image.php';
+        } else {
+            apiPath = 'api/upload-product-image.php';
+        }
+        
+        console.log('🌐 [GRADIMENTO] Percorso API determinato:', apiPath);
+        
+        // Verifica se l'API esiste prima di tentare l'upload
         try {
-            const testResponse = await fetch('api/upload-product-image.php', {
+            console.log('🔍 [GRADIMENTO] Verificando esistenza API con richiesta HEAD...');
+            const testResponse = await fetch(apiPath, {
                 method: 'HEAD'
             });
             
+            console.log('📡 [GRADIMENTO] Risposta HEAD - Status:', testResponse.status, 'OK:', testResponse.ok);
+            
             if (!testResponse.ok) {
+                console.warn('⚠️ [GRADIMENTO] API non disponibile - Status:', testResponse.status);
                 return {
                     success: false,
                     message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
                 };
             }
+            
+            console.log('✅ [GRADIMENTO] API disponibile, procedendo con upload...');
         } catch (error) {
+            console.error('❌ [GRADIMENTO] Errore nella verifica API:', error);
             return {
                 success: false,
                 message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
@@ -371,21 +391,40 @@ class AdminValutazioneManager {
         const formData = new FormData();
         formData.append('productImage', file);
         formData.append('productId', productId);
+        
+        console.log('📦 [GRADIMENTO] FormData preparato:');
+        console.log('  - productImage:', file.name);
+        console.log('  - productId:', productId);
 
         try {
-            const response = await fetch('api/upload-product-image.php', {
+            console.log('🚀 [GRADIMENTO] Inviando richiesta POST...');
+            const response = await fetch(apiPath, {
                 method: 'POST',
                 body: formData
             });
 
+            console.log('📨 [GRADIMENTO] Risposta ricevuta - Status:', response.status, 'OK:', response.ok);
+
             if (!response.ok) {
+                console.error('❌ [GRADIMENTO] Risposta HTTP non OK:', response.status, response.statusText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const result = await response.json();
+            const responseText = await response.text();
+            console.log('📄 [GRADIMENTO] Testo risposta grezzo:', responseText);
+            
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                console.log('✅ [GRADIMENTO] JSON parsato con successo:', result);
+            } catch (parseError) {
+                console.error('❌ [GRADIMENTO] Errore parsing JSON:', parseError);
+                throw new Error('Risposta del server non è JSON valido');
+            }
+            
             return result;
         } catch (error) {
-            console.error('Errore nella richiesta di upload:', error);
+            console.error('❌ [GRADIMENTO] Errore nella richiesta di upload:', error);
             return {
                 success: false,
                 message: 'Errore di connessione durante il caricamento dell\'immagine. Usa il campo nome file manuale.'
