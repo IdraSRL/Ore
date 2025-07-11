@@ -2,6 +2,12 @@
 ;(function() {
   'use strict';
 
+  // Variabile globale per tracciare l'inizializzazione
+  if (window.gradimentoInitialized) {
+    console.log('Gradimento già inizializzato globalmente, skip...');
+    return;
+  }
+
   // Debounce utility
   function debounce(fn, ms) {
     let timer;
@@ -17,22 +23,23 @@
     filtered: [],
     charts: {},
     clientCharts: {},
-    isInitialized: false,
 
     // Initialize
     async init() {
-      // Previeni inizializzazioni multiple
-      if (this.isInitialized) {
-        console.log('Gradimento già inizializzato, skip...');
+      // Controllo globale per prevenire inizializzazioni multiple
+      if (window.gradimentoInitialized) {
+        console.log('Gradimento già inizializzato globalmente, skip...');
         return;
       }
+      
+      console.log('🚀 Inizializzazione Gradimento...');
+      window.gradimentoInitialized = true;
       
       this.showLoading();
       await this.loadData();
       this.hideLoading();
       this.bindUI();
       this.renderAll();
-      this.isInitialized = true;
       
       // Auto-refresh ogni 5 minuti
       setInterval(async () => {
@@ -136,11 +143,13 @@
     renderBar() {
       const canvas = document.getElementById('gr-bar');
       if (!canvas) return;
+      
       const ctx = canvas.getContext('2d');
       const stats = window.firebaseService.calculateStats(this.filtered);
       
       // Distruggi il grafico esistente se presente
       if (this.charts.bar) this.charts.bar.destroy();
+        console.log('🗑️ Distruggendo grafico bar esistente...');
       
       this.charts.bar = new Chart(ctx, {
         type: 'bar',
@@ -196,12 +205,14 @@
     renderLine() {
       const canvas = document.getElementById('gr-line');
       if (!canvas) return;
+      
       const ctx = canvas.getContext('2d');
       const stats = window.firebaseService.calculateStats(this.filtered);
       const months = Object.keys(stats.monthlyTrend).sort();
       
       // Distruggi il grafico esistente se presente
       if (this.charts.line) this.charts.line.destroy();
+        console.log('🗑️ Distruggendo grafico line esistente...');
       
       this.charts.line = new Chart(ctx, {
         type:'line',
@@ -269,6 +280,7 @@
       // Distruggi tutti i grafici clienti esistenti
       Object.values(this.clientCharts).forEach(chart => {
         if (chart && typeof chart.destroy === 'function') {
+          console.log('🗑️ Distruggendo grafico cliente...');
           chart.destroy();
         }
       });
@@ -595,6 +607,8 @@
         toast.style.background = 'linear-gradient(45deg, #10b981, #059669)';
       } else {
         toast.style.background = 'linear-gradient(45deg, #6366f1, #4f46e5)';
+        this.charts.bar = null;
+        this.charts.line = null;
       }
       
       toast.textContent = message;
@@ -605,6 +619,23 @@
         setTimeout(() => toast.remove(), 300);
       }, 3000);
     }
+  };
+
+  // Funzione di cleanup globale
+  window.cleanupGradimento = function() {
+    if (window.Gradimento && window.Gradimento.charts) {
+      Object.values(window.Gradimento.charts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+      Object.values(window.Gradimento.clientCharts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+          chart.destroy();
+        }
+      });
+    }
+    window.gradimentoInitialized = false;
   };
 
   // Aggiungi stili per le animazioni dei toast
@@ -621,5 +652,19 @@
   `;
   document.head.appendChild(style);
 
-  document.addEventListener('DOMContentLoaded', () => Gradimento.init());
+  // Esporta per uso globale
+  window.Gradimento = Gradimento;
+
+  // Inizializza solo se il DOM è pronto e non è già inizializzato
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.gradimentoInitialized) {
+        Gradimento.init();
+      }
+    });
+  } else {
+    if (!window.gradimentoInitialized) {
+      Gradimento.init();
+    }
+  }
 })();
