@@ -8,12 +8,17 @@ RewriteEngine On
 
 # Headers per CORS
 Header always set Access-Control-Allow-Origin "*"
-Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT"
+Header always set Access-Control-Allow-Methods "POST, OPTIONS"
 Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
 
 # Gestisci richieste OPTIONS
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ $1 [R=200,L]
+
+# Forza il tipo MIME per i file PHP
+<Files "upload-product-image.php">
+    ForceType application/x-httpd-php
+</Files>
 
 # Sicurezza: impedisci accesso a file sensibili
 <FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|conf)$">

@@ -13,19 +13,12 @@ error_log("Headers: " . json_encode(getallheaders()));
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS, HEAD');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 // Gestisci richieste OPTIONS per CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     error_log("OPTIONS request handled");
-    http_response_code(200);
-    exit();
-}
-
-// Gestisci richieste HEAD per verificare esistenza API
-if ($_SERVER['REQUEST_METHOD'] === 'HEAD') {
-    error_log("HEAD request handled - API exists");
     http_response_code(200);
     exit();
 }

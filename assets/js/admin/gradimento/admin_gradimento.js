@@ -362,32 +362,6 @@ class AdminValutazioneManager {
         
         console.log('🌐 [GRADIMENTO] Percorso API determinato:', apiPath);
         
-        // Verifica se l'API esiste prima di tentare l'upload
-        try {
-            console.log('🔍 [GRADIMENTO] Verificando esistenza API con richiesta HEAD...');
-            const testResponse = await fetch(apiPath, {
-                method: 'HEAD'
-            });
-            
-            console.log('📡 [GRADIMENTO] Risposta HEAD - Status:', testResponse.status, 'OK:', testResponse.ok);
-            
-            if (!testResponse.ok) {
-                console.warn('⚠️ [GRADIMENTO] API non disponibile - Status:', testResponse.status);
-                return {
-                    success: false,
-                    message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
-                };
-            }
-            
-            console.log('✅ [GRADIMENTO] API disponibile, procedendo con upload...');
-        } catch (error) {
-            console.error('❌ [GRADIMENTO] Errore nella verifica API:', error);
-            return {
-                success: false,
-                message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
-            };
-        }
-        
         const formData = new FormData();
         formData.append('productImage', file);
         formData.append('productId', productId);
@@ -425,6 +399,15 @@ class AdminValutazioneManager {
             return result;
         } catch (error) {
             console.error('❌ [GRADIMENTO] Errore nella richiesta di upload:', error);
+            
+            // Se l'errore è di rete, potrebbe essere un problema di configurazione server
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                return {
+                    success: false,
+                    message: 'Errore di connessione al server. Verifica la configurazione del server o usa il campo nome file manuale.'
+                };
+            }
+            
             return {
                 success: false,
                 message: 'Errore di connessione durante il caricamento dell\'immagine. Usa il campo nome file manuale.'
