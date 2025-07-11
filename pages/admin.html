@@ -601,7 +601,7 @@
 <script type="module" src="../assets/js/admin/common/admin.js"></script>
 <script type="module" src="../assets/js/admin/common/admin-data.js"></script>
 
-<!-- Tab “Gradimento” -->
+<!-- Tab "Gradimento" -->
 <script type="module" src="../assets/js/admin/gradimento/admin_gradimento.js"></script>
 
 <!-- Utility -->
@@ -630,6 +630,25 @@
         }
       });
     });
+
+    // Reset del modal quando viene chiuso
+    const addProductModal = document.getElementById('addProductModal');
+    if (addProductModal) {
+        addProductModal.addEventListener('hidden.bs.modal', () => {
+            // Forza rimozione di eventuali backdrop rimasti
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            }, 100);
+            
+            if (window.adminValutazioneManager) {
+                window.adminValutazioneManager.resetModal();
+            }
+        });
+    }
   });
 </script>
 
