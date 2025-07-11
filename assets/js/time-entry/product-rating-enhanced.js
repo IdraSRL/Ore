@@ -55,10 +55,15 @@ class ProductRatingManagerEnhanced {
             this.products = [];
             
             querySnapshot.forEach((doc) => {
-                this.products.push({
+                const productData = {
                     id: doc.id,
                     ...doc.data()
-                });
+                };
+                
+                // Mostra solo i prodotti visibili (visible !== false)
+                if (productData.visible !== false) {
+                    this.products.push(productData);
+                }
             });
 
 

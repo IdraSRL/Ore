@@ -7,6 +7,7 @@ import {
   getDoc,
   setDoc,
   deleteDoc,
+  updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
@@ -16,6 +17,7 @@ class AdminValutazioneManager {
         this.ratings = {};
         this.charts = {};
         this.isInitialized = false;
+        this.currentView = 'dashboard'; // 'dashboard' | 'products'
     }
 
     async init() {
@@ -40,8 +42,42 @@ class AdminValutazioneManager {
             saveProductBtn.addEventListener('click', () => this.handleAddProduct());
         }
 
+        // Toggle view buttons
+        const dashboardBtn = document.getElementById('viewDashboardBtn');
+        const productsBtn = document.getElementById('viewProductsBtn');
+        
+        if (dashboardBtn) {
+            dashboardBtn.addEventListener('click', () => this.switchView('dashboard'));
+        }
+        
+        if (productsBtn) {
+            productsBtn.addEventListener('click', () => this.switchView('products'));
+        }
+
         // Setup image modal functionality
         this.setupImageModal();
+    }
+
+    switchView(view) {
+        this.currentView = view;
+        const dashboardContent = document.getElementById('dashboardProductsContent');
+        const productsListContent = document.getElementById('productsListContent');
+        const dashboardBtn = document.getElementById('viewDashboardBtn');
+        const productsBtn = document.getElementById('viewProductsBtn');
+
+        if (view === 'dashboard') {
+            if (dashboardContent) dashboardContent.style.display = 'block';
+            if (productsListContent) productsListContent.style.display = 'none';
+            if (dashboardBtn) dashboardBtn.classList.add('active');
+            if (productsBtn) productsBtn.classList.remove('active');
+            this.renderDashboard();
+        } else {
+            if (dashboardContent) dashboardContent.style.display = 'none';
+            if (productsListContent) productsListContent.style.display = 'block';
+            if (dashboardBtn) dashboardBtn.classList.remove('active');
+            if (productsBtn) productsBtn.classList.add('active');
+            this.renderProductsList();
+        }
     }
 
     setupImageModal() {
@@ -93,7 +129,11 @@ class AdminValutazioneManager {
             refreshBtn.disabled = true;
 
             await this.loadData();
-            this.renderDashboard();
+            if (this.currentView === 'dashboard') {
+                this.renderDashboard();
+            } else {
+                this.renderProductsList();
+            }
 
             refreshBtn.innerHTML = originalText;
             refreshBtn.disabled = false;
@@ -175,6 +215,7 @@ class AdminValutazioneManager {
             imageUrl: `https://www.artigea.it/TestOre/assets/img/products/${formData.get('productImage').trim()}`,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
+            visible: true, // Default visibile
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
@@ -202,7 +243,11 @@ class AdminValutazioneManager {
             
             // Ricarica dati
             await this.loadData();
-            this.renderDashboard();
+            if (this.currentView === 'dashboard') {
+                this.renderDashboard();
+            } else {
+                this.renderProductsList();
+            }
         } catch (error) {
             console.error('Errore nel salvataggio:', error);
             this.showError('Errore nel salvataggio del prodotto');
@@ -216,10 +261,34 @@ class AdminValutazioneManager {
             await deleteDoc(doc(db, 'Products', productId));
             this.showSuccess('Prodotto eliminato con successo!');
             await this.loadData();
-            this.renderDashboard();
+            if (this.currentView === 'dashboard') {
+                this.renderDashboard();
+            } else {
+                this.renderProductsList();
+            }
         } catch (error) {
             console.error('Errore nell\'eliminazione:', error);
             this.showError('Errore nell\'eliminazione del prodotto');
+        }
+    }
+
+    async toggleProductVisibility(productId, visible) {
+        try {
+            await updateDoc(doc(db, 'Products', productId), {
+                visible: visible,
+                updatedAt: serverTimestamp()
+            });
+            
+            // Aggiorna il prodotto locale
+            const product = this.products.find(p => p.id === productId);
+            if (product) {
+                product.visible = visible;
+            }
+            
+            this.showSuccess(`Prodotto ${visible ? 'reso visibile' : 'nascosto'} ai dipendenti`);
+        } catch (error) {
+            console.error('Errore nell\'aggiornamento visibilità:', error);
+            this.showError('Errore nell\'aggiornamento della visibilità');
         }
     }
 
@@ -245,8 +314,126 @@ class AdminValutazioneManager {
         this.renderProductCharts();
     }
 
+    renderProductsList() {
+        const productsListContent = document.getElementById('productsListContent');
+        if (!productsListContent) return;
+
+        if (this.products.length === 0) {
+            productsListContent.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">Nessun prodotto disponibile</h4>
+                    <p class="text-muted">Aggiungi il primo prodotto per iniziare.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const tableHtml = `
+            <div class="table-responsive">
+                <table class="table table-dark table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Immagine</th>
+                            <th>Nome</th>
+                            <th>Marca</th>
+                            <th>Tipo</th>
+                            <th>Valutazioni</th>
+                            <th>Media</th>
+                            <th style="width: 120px;">Visibilità</th>
+                            <th style="width: 100px;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.products.map(product => this.renderProductRow(product)).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        productsListContent.innerHTML = tableHtml;
+
+        // Aggiungi event listeners per i toggle di visibilità
+        this.products.forEach(product => {
+            const toggle = document.getElementById(`visibility-toggle-${product.id}`);
+            if (toggle) {
+                toggle.addEventListener('change', (e) => {
+                    this.toggleProductVisibility(product.id, e.target.checked);
+                });
+            }
+        });
+    }
+
+    renderProductRow(product) {
+        const productRatings = this.ratings[product.id] || [];
+        const ratingsCount = productRatings.length;
+        
+        let averageRating = 0;
+        if (ratingsCount > 0) {
+            const totalScore = productRatings.reduce((sum, rating) => {
+                return sum + rating.efficacia + rating.profumo + rating.facilita;
+            }, 0);
+            averageRating = (totalScore / (ratingsCount * 3)).toFixed(1);
+        }
+
+        const isVisible = product.visible !== false; // Default true se non specificato
+
+        return `
+            <tr>
+                <td>
+                    <img src="${product.imageUrl}" 
+                         alt="${product.name}" 
+                         class="product-image" 
+                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer;"
+                         onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
+                </td>
+                <td>
+                    <div>
+                        <strong>${product.name}</strong>
+                        <br>
+                        <small class="text-muted">${product.description || 'Nessuna descrizione'}</small>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-primary">${product.tagMarca || 'N/A'}</span>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
+                </td>
+                <td class="text-center">
+                    <span class="badge ${ratingsCount > 0 ? 'bg-success' : 'bg-warning'}">${ratingsCount}</span>
+                </td>
+                <td class="text-center">
+                    ${ratingsCount > 0 ? 
+                        `<strong class="text-warning">${averageRating}/10</strong>` : 
+                        '<span class="text-muted">-</span>'
+                    }
+                </td>
+                <td class="text-center">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="visibility-toggle-${product.id}"
+                               ${isVisible ? 'checked' : ''}>
+                        <label class="form-check-label small" for="visibility-toggle-${product.id}">
+                            ${isVisible ? 'Visibile' : 'Nascosto'}
+                        </label>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-danger btn-sm" 
+                            onclick="adminValutazioneManager.deleteProduct('${product.id}')"
+                            title="Elimina prodotto">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
     renderStats() {
         const totalProducts = this.products.length;
+        const visibleProducts = this.products.filter(p => p.visible !== false).length;
         let totalRatings = 0;
         let totalScore = 0;
         let scoreCount = 0;
@@ -262,11 +449,13 @@ class AdminValutazioneManager {
         const overallAverage = scoreCount > 0 ? (totalScore / scoreCount).toFixed(1) : 0;
 
         const totalProductsEl = document.getElementById('totalProductsCount');
+        const visibleProductsEl = document.getElementById('visibleProductsCount');
         const totalRatingsEl = document.getElementById('totalRatingsCount');
         const overallAverageEl = document.getElementById('overallAverageScore');
         const lastUpdateEl = document.getElementById('lastUpdateTime');
 
         if (totalProductsEl) totalProductsEl.textContent = totalProducts;
+        if (visibleProductsEl) visibleProductsEl.textContent = visibleProducts;
         if (totalRatingsEl) totalRatingsEl.textContent = totalRatings;
         if (overallAverageEl) overallAverageEl.textContent = overallAverage;
         if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleString('it-IT');
@@ -326,6 +515,7 @@ class AdminValutazioneManager {
                             <div class="mt-1">
                                 <span class="badge bg-primary me-1">${product.tagMarca || 'N/A'}</span>
                                 <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
+                                ${product.visible === false ? '<span class="badge bg-warning text-dark ms-1">Nascosto</span>' : ''}
                             </div>
                         </div>
                         <button class="btn btn-danger btn-sm ms-auto" onclick="adminValutazioneManager.deleteProduct('${product.id}')">
