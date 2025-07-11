@@ -349,9 +349,14 @@ class AdminValutazioneManager {
     }
 
     async uploadProductImage(file, productId) {
-        // Verifica se il file API esiste prima di tentare l'upload
+        // Costruisci il percorso corretto per l'API
+        const apiPath = window.location.pathname.includes('/pages/') 
+            ? '../api/upload-product-image.php'
+            : 'api/upload-product-image.php';
+            
+        // Verifica se l'API esiste prima di tentare l'upload
         try {
-            const testResponse = await fetch('api/upload-product-image.php', {
+            const testResponse = await fetch(apiPath, {
                 method: 'HEAD'
             });
             
@@ -373,7 +378,7 @@ class AdminValutazioneManager {
         formData.append('productId', productId);
 
         try {
-            const response = await fetch('api/upload-product-image.php', {
+            const response = await fetch(apiPath, {
                 method: 'POST',
                 body: formData
             });

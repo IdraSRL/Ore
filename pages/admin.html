@@ -615,6 +615,24 @@
 <!-- Script Valutazione Prodotti -->
 <script type="module" src="../assets/js/admin/valutazione/admin-valutazione.js"></script>
 
+<!-- Cleanup script per prevenire conflitti -->
+<script>
+  // Cleanup quando si cambia tab
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('#adminTabs button[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+      tab.addEventListener('shown.bs.tab', (e) => {
+        // Se stiamo lasciando la tab gradimento, cleanup
+        if (e.relatedTarget && e.relatedTarget.id === 'gradimento-tab') {
+          if (window.cleanupGradimento) {
+            window.cleanupGradimento();
+          }
+        }
+      });
+    });
+  });
+</script>
+
 <script type="module">
   import { AuthService } from '../assets/js/auth/auth.js';
   import { loadBnbEntries } from '../assets/js/admin/bnb/admin-bnb.js';

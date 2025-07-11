@@ -1,670 +1,824 @@
-// File: admin-gradimento.js
-;(function() {
-  'use strict';
+// admin-valutazione.js - Gestione valutazioni prodotti nel pannello admin
+import { db } from "../../common/firebase-config.js";
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  getDoc,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-  // Variabile globale per tracciare l'inizializzazione
-  if (window.gradimentoInitialized) {
-    console.log('Gradimento già inizializzato globalmente, skip...');
-    return;
-  }
+class AdminValutazioneManager {
+    constructor() {
+        this.products = [];
+        this.ratings = {};
+        this.charts = {};
+        this.isInitialized = false;
+        this.currentView = 'dashboard'; // 'dashboard' | 'products'
+    }
 
-  // Debounce utility
-  function debounce(fn, ms) {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), ms);
-    };
-  }
-
-  // Main module
-  const Gradimento = {
-    data: [],
-    filtered: [],
-    charts: {},
-    clientCharts: {},
-
-    // Initialize
     async init() {
-      // Controllo globale per prevenire inizializzazioni multiple
-      if (window.gradimentoInitialized) {
-        console.log('Gradimento già inizializzato globalmente, skip...');
-        return;
-      }
-      
-      console.log('🚀 Inizializzazione Gradimento...');
-      window.gradimentoInitialized = true;
-      
-      this.showLoading();
-      await this.loadData();
-      this.hideLoading();
-      this.bindUI();
-      this.renderAll();
-      
-      // Auto-refresh ogni 5 minuti
-      setInterval(async () => {
+        if (this.isInitialized) {
+            console.log('AdminValutazioneManager già inizializzato, skip...');
+            return;
+        }
+        
+        console.log('Inizializzazione Admin Valutazione Prodotti...');
+        this.setupEventListeners();
         await this.loadData();
-        this.renderAll();
-      }, 5 * 60 * 1000);
-    },
+        this.renderDashboard();
+        this.isInitialized = true;
+    }
 
-    // Carica dati da Firebase
-    async loadData() {
-      try {
-        const res = await window.firebaseService.getAllFeedback();
-        if (!res.success) throw new Error(res.message);
-        this.data = res.data || [];
-        this.filtered = [...this.data];
-        this.populateMonthFilter();
-        this.populateClientFilter();
-      } catch (err) {
-        this.showError(err.message || 'Errore caricamento dati');
-      }
-    },
+    setupEventListeners() {
+        const refreshBtn = document.getElementById('refreshProductsBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refresh());
+        }
 
-    // Associa eventi UI
-    bindUI() {
-      const elMonth  = document.getElementById('gr-month');
-      const elRating = document.getElementById('gr-rating');
-      const elEmail  = document.getElementById('gr-email');
-      const elClient = document.getElementById('gr-client');
-      const btnApply = document.getElementById('gr-apply');
-      const btnRef   = document.getElementById('gr-refresh');
-      const tbody    = document.getElementById('gr-body');
-      const btnSave  = document.getElementById('gr-detail-save');
+        // Form aggiunta prodotto
+        const saveProductBtn = document.getElementById('saveProductBtn');
+        if (saveProductBtn) {
+            saveProductBtn.addEventListener('click', () => this.handleAddProduct());
+        }
 
-      if (btnApply) btnApply.addEventListener('click', () => this.applyFilters());
-      if (elMonth)  elMonth.addEventListener('change', () => this.applyFilters());
-      if (elRating) elRating.addEventListener('change', () => this.applyFilters());
-      if (elClient) elClient.addEventListener('change', () => this.applyFilters());
-      if (elEmail)  elEmail.addEventListener('input', debounce(() => this.applyFilters(), 300));
-      if (btnRef)   btnRef.addEventListener('click', async () => {
-        this.showLoading();
-        await this.loadData();
-        this.hideLoading();
-        this.renderAll();
-      });
-      if (btnSave)  btnSave.addEventListener('click', () => this.saveDetails());
+        // Preview immagine
+        const imageFileInput = document.getElementById('productImageFile');
+        if (imageFileInput) {
+            imageFileInput.addEventListener('change', (e) => this.handleImagePreview(e));
+        }
 
-      // Delegate clicks in table
-      if (tbody) {
-        tbody.addEventListener('click', e => {
-          const cm = e.target.closest('.comment-preview');
-          if (cm) return this.showComment(cm.dataset.comment);
-          const vd = e.target.closest('.btn-view');
-          if (vd) return this.viewDetails(vd.dataset.id);
-          const saveBtn = e.target.closest('.btn-save-name');
-          if (saveBtn) return this.saveClientName(saveBtn);
+        // Auto-genera ID prodotto dal nome
+        const productNameInput = document.getElementById('productName');
+        const productIdInput = document.getElementById('productId');
+        if (productNameInput && productIdInput) {
+            productNameInput.addEventListener('input', (e) => {
+                if (!productIdInput.value) {
+                    const autoId = e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s]/g, '')
+                        .replace(/\s+/g, '-')
+                        .substring(0, 30);
+                    productIdInput.value = autoId;
+                }
+            });
+        }
+
+        // Toggle view buttons
+        const dashboardBtn = document.getElementById('viewDashboardBtn');
+        const productsBtn = document.getElementById('viewProductsBtn');
+        
+        if (dashboardBtn) {
+            dashboardBtn.addEventListener('click', () => this.switchView('dashboard'));
+        }
+        
+        if (productsBtn) {
+            productsBtn.addEventListener('click', () => this.switchView('products'));
+        }
+
+        // Setup image modal functionality
+        this.setupImageModal();
+    }
+
+    switchView(view) {
+        this.currentView = view;
+        const dashboardContent = document.getElementById('dashboardProductsContent');
+        const productsListContent = document.getElementById('productsListContent');
+        const dashboardBtn = document.getElementById('viewDashboardBtn');
+        const productsBtn = document.getElementById('viewProductsBtn');
+
+        if (view === 'dashboard') {
+            if (dashboardContent) dashboardContent.style.display = 'block';
+            if (productsListContent) productsListContent.style.display = 'none';
+            if (dashboardBtn) dashboardBtn.classList.add('active');
+            if (productsBtn) productsBtn.classList.remove('active');
+            this.renderDashboard();
+        } else {
+            if (dashboardContent) dashboardContent.style.display = 'none';
+            if (productsListContent) productsListContent.style.display = 'block';
+            if (dashboardBtn) dashboardBtn.classList.remove('active');
+            if (productsBtn) productsBtn.classList.add('active');
+            this.renderProductsList();
+        }
+    }
+
+    setupImageModal() {
+        // Riutilizza la logica del modal per le immagini
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('product-image') || e.target.classList.contains('product-detail-image')) {
+                this.openImageModal(e.target.src, e.target.alt);
+            }
         });
-      }
-    },
 
-    // Popola filtro mesi
-    populateMonthFilter() {
-      const sel = document.getElementById('gr-month');
-      if (!sel) return;
-      const months = Array.from(new Set(this.data.map(f => f.mese))).sort();
-      sel.innerHTML = '<option value="all">Tutti i mesi</option>' +
-        months.map(m => `<option value="${m}">${window.utils.getMonthName(m)}</option>`).join('');
-    },
-
-    // Popola filtro clienti
-    populateClientFilter() {
-      const sel = document.getElementById('gr-client');
-      if (!sel) return;
-      const clients = Array.from(new Set(this.data.map(f => f.nomeCliente || f.email))).sort();
-      sel.innerHTML = '<option value="all">Tutti i clienti</option>' +
-        clients.map(c => `<option value="${c}">${c}</option>`).join('');
-    },
-
-    // Rendering completo
-    renderAll() {
-      this.renderStats();
-      this.renderBar();
-      this.renderLine();
-      this.renderClientCharts();
-      this.renderTable();
-    },
-
-    // Statistiche
-    renderStats() {
-      const stats = window.firebaseService.calculateStats(this.filtered);
-      this.setText('gr-total',   stats.totalClients);
-      this.setText('gr-avg',     stats.avgRating.toFixed(1));
-      this.setText('gr-monthly', stats.thisMonth);
-      this.setText('gr-comments',stats.withComments);
-    },
-    setText(id, txt) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = txt;
-    },
-
-    // Grafici principali
-    renderBar() {
-      const canvas = document.getElementById('gr-bar');
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      const stats = window.firebaseService.calculateStats(this.filtered);
-      
-      // Distruggi il grafico esistente se presente
-      if (this.charts.bar) this.charts.bar.destroy();
-        console.log('🗑️ Distruggendo grafico bar esistente...');
-      
-      this.charts.bar = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Pulizia','Prodotti','Comunicazione'],
-          datasets:[{
-            data: stats.questionsAvg,
-            backgroundColor:['rgba(99,102,241,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)'],
-            borderColor:['rgba(99,102,241,1)','rgba(16,185,129,1)','rgba(245,158,11,1)'],
-            borderWidth:2,
-            borderRadius: 8,
-            borderSkipped: false,
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{
-            legend:{display:false},
-            tooltip: {
-              backgroundColor: 'rgba(31, 41, 55, 0.9)',
-              titleColor: '#f3f4f6',
-              bodyColor: '#f3f4f6',
-              borderColor: '#4b5563',
-              borderWidth: 1,
-              cornerRadius: 8,
-            }
-          },
-          scales:{
-            y:{
-              beginAtZero:true,
-              max:10,
-              grid: {
-                color: 'rgba(75, 85, 99, 0.3)'
-              },
-              ticks: {
-                color: '#9ca3af'
-              }
-            },
-            x: {
-              grid: {
-                color: 'rgba(75, 85, 99, 0.3)'
-              },
-              ticks: {
-                color: '#9ca3af'
-              }
-            }
-          }
+        // Crea modal se non esiste
+        if (!document.getElementById('productImageModal')) {
+            const modal = document.createElement('div');
+            modal.id = 'productImageModal';
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header border-secondary">
+                            <h5 class="modal-title text-light">Immagine Prodotto</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img id="modalProductImage" class="img-fluid" style="max-height: 70vh;">
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
-      });
-    },
+    }
 
-    renderLine() {
-      const canvas = document.getElementById('gr-line');
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      const stats = window.firebaseService.calculateStats(this.filtered);
-      const months = Object.keys(stats.monthlyTrend).sort();
-      
-      // Distruggi il grafico esistente se presente
-      if (this.charts.line) this.charts.line.destroy();
-        console.log('🗑️ Distruggendo grafico line esistente...');
-      
-      this.charts.line = new Chart(ctx, {
-        type:'line',
-        data:{ 
-          labels: months.map(m=>window.utils.getMonthName(m)), 
-          datasets:[{ 
-            data: months.map(m=>stats.monthlyTrend[m]), 
-            backgroundColor:'rgba(99,102,241,0.1)', 
-            borderColor:'rgba(99,102,241,1)', 
-            fill:true, 
-            tension:0.4,
-            pointBackgroundColor: 'rgba(99,102,241,1)',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 6,
-            pointHoverRadius: 8,
-          }] 
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{
-            legend:{display:false},
-            tooltip: {
-              backgroundColor: 'rgba(31, 41, 55, 0.9)',
-              titleColor: '#f3f4f6',
-              bodyColor: '#f3f4f6',
-              borderColor: '#4b5563',
-              borderWidth: 1,
-              cornerRadius: 8,
-            }
-          },
-          scales:{
-            y:{
-              beginAtZero:true,
-              max:10,
-              grid: {
-                color: 'rgba(75, 85, 99, 0.3)'
-              },
-              ticks: {
-                color: '#9ca3af'
-              }
-            },
-            x: {
-              grid: {
-                color: 'rgba(75, 85, 99, 0.3)'
-              },
-              ticks: {
-                color: '#9ca3af'
-              }
-            }
-          }
-        }
-      });
-    },
-
-    // Grafici per cliente
-    renderClientCharts() {
-      const container = document.getElementById('gr-client-charts');
-      if (!container) return;
-
-      const stats = window.firebaseService.calculateStats(this.filtered);
-      const clientStats = stats.clientStats;
-
-      // Distruggi tutti i grafici clienti esistenti
-      Object.values(this.clientCharts).forEach(chart => {
-        if (chart && typeof chart.destroy === 'function') {
-          console.log('🗑️ Distruggendo grafico cliente...');
-          chart.destroy();
-        }
-      });
-      this.clientCharts = {};
-
-      // Pulisci container
-      container.innerHTML = '';
-
-      // Crea sezione per grafici clienti
-      const section = document.createElement('div');
-      section.className = 'gr-client-charts fade-in';
-      section.innerHTML = `
-        <div class="gr-divider"></div>
-        <h4 style="color: #e5e7eb; margin-bottom: 1.5rem;">
-          <i class="fas fa-user-chart me-2"></i></h4>
-      `;
-
-      // Ordina clienti per media voto (decrescente)
-      const sortedClients = Object.entries(clientStats)
-        .sort(([,a], [,b]) => b.avgRating - a.avgRating)
-        .slice(0, 6); // Mostra solo i primi 6 clienti
-
-      sortedClients.forEach(([clientName, clientData]) => {
-        const chartContainer = document.createElement('div');
-        chartContainer.className = 'gr-client-chart-container slide-up';
+    openImageModal(src, alt) {
+        const modal = document.getElementById('productImageModal');
+        const modalImg = document.getElementById('modalProductImage');
         
-        const canvasId = `client-chart-${clientName.replace(/[^a-zA-Z0-9]/g, '')}`;
-        chartContainer.innerHTML = `
-          <h5>
-            <i class="fas fa-user me-2"></i>${clientName}
-          </h5>
-          <div class="client-info">
-            <span class="me-3">📊 Media: <strong>${clientData.avgRating}</strong></span>
-            <span class="me-3">📝 Feedback: <strong>${clientData.count}</strong></span>
-            <span>📧 Email: <strong>${clientData.emails.join(', ')}</strong></span>
-          </div>
-          <canvas id="${canvasId}" style="height: 200px !important;"></canvas>
+        if (modal && modalImg) {
+            modalImg.src = src;
+            modalImg.alt = alt;
+            new bootstrap.Modal(modal).show();
+        }
+    }
+
+    async refresh() {
+        const refreshBtn = document.getElementById('refreshProductsBtn');
+        if (refreshBtn) {
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Aggiornamento...';
+            refreshBtn.disabled = true;
+
+            await this.loadData();
+            if (this.currentView === 'dashboard') {
+                this.renderDashboard();
+            } else {
+                this.renderProductsList();
+            }
+
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+        }
+    }
+
+    async loadData() {
+        try {
+            await this.loadProducts();
+            await this.loadRatings();
+        } catch (error) {
+            console.error('Errore nel caricamento dati valutazioni:', error);
+            this.showError('Errore nel caricamento dei dati valutazioni.');
+        }
+    }
+
+    async loadProducts() {
+        try {
+            console.log('Caricamento prodotti per admin dashboard...');
+            
+            // Carica dalla collezione Products
+            const querySnapshot = await getDocs(collection(db, 'Products'));
+            
+            this.products = [];
+            
+            querySnapshot.forEach((doc) => {
+                this.products.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            console.log('Prodotti caricati per admin dashboard:', this.products.length);
+        } catch (error) {
+            console.error('Errore nel caricamento prodotti:', error);
+        }
+    }
+
+    async loadRatings() {
+        this.ratings = {};
+        
+        try {
+            console.log('Caricamento valutazioni per admin dashboard...');
+            
+            for (const product of this.products) {
+                try {
+                    // Carica tutte le valutazioni per questo prodotto
+                    const ratingsRef = collection(db, 'ProductRatings', product.id, 'ratings');
+                    const querySnapshot = await getDocs(ratingsRef);
+                    
+                    this.ratings[product.id] = [];
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        this.ratings[product.id].push({
+                            userId: doc.id,
+                            ...data
+                        });
+                    });
+                } catch (error) {
+                    console.log(`Nessuna valutazione per prodotto ${product.id}`);
+                    this.ratings[product.id] = [];
+                }
+            }
+            
+            console.log('Valutazioni caricate per admin dashboard:', Object.keys(this.ratings).length);
+        } catch (error) {
+            console.error('Errore nel caricamento valutazioni:', error);
+        }
+    }
+
+    handleImagePreview(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (file) {
+            // Verifica tipo file
+            if (!file.type.startsWith('image/')) {
+                this.showError('Seleziona un file immagine valido');
+                event.target.value = '';
+                preview.style.display = 'none';
+                return;
+            }
+            
+            // Verifica dimensione (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                this.showError('L\'immagine è troppo grande. Massimo 5MB consentiti.');
+                event.target.value = '';
+                preview.style.display = 'none';
+                return;
+            }
+            
+            // Mostra anteprima
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Pulisci il campo nome file manuale
+            const manualInput = document.getElementById('productImage');
+            if (manualInput) {
+                manualInput.value = '';
+            }
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    async handleAddProduct() {
+        const form = document.getElementById('addProductForm');
+        const formData = new FormData(form);
+        
+        // Verifica se è stata selezionata un'immagine per l'upload
+        const imageFile = formData.get('productImageFile');
+        const imageFileName = formData.get('productImage');
+        
+        if (imageFile && imageFile.size > 0) {
+            // Upload dell'immagine
+            try {
+                const uploadResult = await this.uploadProductImage(imageFile, formData.get('productId'));
+                if (!uploadResult.success) {
+                    // Se l'upload fallisce, chiedi di usare il campo manuale
+                    this.showError(uploadResult.message);
+                    return;
+                }
+                // Usa il nome file restituito dall'upload
+                formData.set('productImage', uploadResult.fileName);
+            } catch (error) {
+                console.error('Errore upload immagine:', error);
+                this.showError('Errore durante il caricamento dell\'immagine. Usa il campo nome file manuale.');
+                return;
+            }
+        } else if (!imageFileName) {
+            this.showError('Seleziona un\'immagine da caricare o inserisci il nome di un file esistente');
+            return;
+        }
+        
+        const productData = {
+            id: formData.get('productId').trim(),
+            name: formData.get('productName').trim(),
+            description: formData.get('productDescription').trim(),
+            imageUrl: `assets/img/products/${(formData.get('productImage') || 'default.jpg').trim()}`,
+            tagMarca: formData.get('productMarca').trim(),
+            tagTipo: formData.get('productTipo').trim(),
+            visible: true, // Default visibile
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+
+        // Validazione
+        if (!productData.id || !productData.name || !productData.imageUrl || !productData.tagMarca || !productData.tagTipo) {
+            this.showError('Tutti i campi sono obbligatori');
+            return;
+        }
+
+        // Verifica se l'ID esiste già
+        if (this.products.find(p => p.id === productData.id)) {
+            this.showError('Un prodotto con questo ID esiste già');
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, 'Products', productData.id), productData);
+            this.showSuccess('Prodotto aggiunto con successo!');
+            
+            // Chiudi modal e reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+            modal.hide();
+            form.reset();
+            
+            // Reset preview immagine
+            const preview = document.getElementById('imagePreview');
+            if (preview) preview.style.display = 'none';
+            
+            // Ricarica dati
+            await this.loadData();
+            if (this.currentView === 'dashboard') {
+                this.renderDashboard();
+            } else {
+                this.renderProductsList();
+            }
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            this.showError('Errore nel salvataggio del prodotto');
+        }
+    }
+
+    async uploadProductImage(file, productId) {
+        // Verifica se il file API esiste prima di tentare l'upload
+        try {
+            const testResponse = await fetch('api/upload-product-image.php', {
+                method: 'HEAD'
+            });
+            
+            if (!testResponse.ok) {
+                return {
+                    success: false,
+                    message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
+                };
+            }
+        } catch (error) {
+            return {
+                success: false,
+                message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
+            };
+        }
+        
+        const formData = new FormData();
+        formData.append('productImage', file);
+        formData.append('productId', productId);
+
+        try {
+            const response = await fetch('api/upload-product-image.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            console.error('Errore nella richiesta di upload:', error);
+            return {
+                success: false,
+                message: 'Errore di connessione durante il caricamento dell\'immagine. Usa il campo nome file manuale.'
+            };
+        }
+    }
+    async deleteProduct(productId) {
+        if (!confirm('Sei sicuro di voler eliminare questo prodotto?')) return;
+
+        try {
+            await deleteDoc(doc(db, 'Products', productId));
+            this.showSuccess('Prodotto eliminato con successo!');
+            await this.loadData();
+            if (this.currentView === 'dashboard') {
+                this.renderDashboard();
+            } else {
+                this.renderProductsList();
+            }
+        } catch (error) {
+            console.error('Errore nell\'eliminazione:', error);
+            this.showError('Errore nell\'eliminazione del prodotto');
+        }
+    }
+
+    async toggleProductVisibility(productId, visible) {
+        try {
+            await updateDoc(doc(db, 'Products', productId), {
+                visible: visible,
+                updatedAt: serverTimestamp()
+            });
+            
+            // Aggiorna il prodotto locale
+            const product = this.products.find(p => p.id === productId);
+            if (product) {
+                product.visible = visible;
+            }
+            
+            this.showSuccess(`Prodotto ${visible ? 'reso visibile' : 'nascosto'} ai dipendenti`);
+        } catch (error) {
+            console.error('Errore nell\'aggiornamento visibilità:', error);
+            this.showError('Errore nell\'aggiornamento della visibilità');
+        }
+    }
+
+    renderDashboard() {
+        const loadingElement = document.getElementById('loadingProductsMessage');
+        const dashboardContent = document.getElementById('dashboardProductsContent');
+        const noDataElement = document.getElementById('noProductsData');
+
+        if (loadingElement) loadingElement.style.display = 'none';
+
+        const hasData = this.products.length > 0 && Object.keys(this.ratings).some(key => this.ratings[key].length > 0);
+
+        if (!hasData) {
+            if (noDataElement) noDataElement.style.display = 'block';
+            if (dashboardContent) dashboardContent.style.display = 'none';
+            return;
+        }
+
+        if (noDataElement) noDataElement.style.display = 'none';
+        if (dashboardContent) dashboardContent.style.display = 'block';
+
+        this.renderStats();
+        this.renderProductCharts();
+    }
+
+    renderProductsList() {
+        const productsListContent = document.getElementById('productsListContent');
+        if (!productsListContent) return;
+
+        if (this.products.length === 0) {
+            productsListContent.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">Nessun prodotto disponibile</h4>
+                    <p class="text-muted">Aggiungi il primo prodotto per iniziare.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const tableHtml = `
+            <div class="table-responsive">
+                <table class="table table-dark table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Immagine</th>
+                            <th>Nome</th>
+                            <th>Marca</th>
+                            <th>Tipo</th>
+                            <th>Valutazioni</th>
+                            <th>Media</th>
+                            <th style="width: 120px;">Visibilità</th>
+                            <th style="width: 100px;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.products.map(product => this.renderProductRow(product)).join('')}
+                    </tbody>
+                </table>
+            </div>
         `;
-        
-        section.appendChild(chartContainer);
 
-        // Crea grafico per il cliente
-        setTimeout(() => {
-          const canvas = document.getElementById(canvasId);
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            this.clientCharts[canvasId] = new Chart(ctx, {
-              type: 'radar',
-              data: {
-                labels: ['Pulizia', 'Prodotti', 'Comunicazione'],
+        productsListContent.innerHTML = tableHtml;
+
+        // Aggiungi event listeners per i toggle di visibilità
+        this.products.forEach(product => {
+            const toggle = document.getElementById(`visibility-toggle-${product.id}`);
+            if (toggle) {
+                toggle.addEventListener('change', (e) => {
+                    this.toggleProductVisibility(product.id, e.target.checked);
+                });
+            }
+        });
+    }
+
+    renderProductRow(product) {
+        const productRatings = this.ratings[product.id] || [];
+        const ratingsCount = productRatings.length;
+        
+        let averageRating = 0;
+        if (ratingsCount > 0) {
+            const totalScore = productRatings.reduce((sum, rating) => {
+                return sum + rating.efficacia + rating.profumo + rating.facilita;
+            }, 0);
+            averageRating = (totalScore / (ratingsCount * 3)).toFixed(1);
+        }
+
+        const isVisible = product.visible !== false; // Default true se non specificato
+
+        return `
+            <tr>
+                <td>
+                    <img src="${product.imageUrl}" 
+                         alt="${product.name}" 
+                         class="product-image" 
+                         style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer;"
+                         onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
+                </td>
+                <td>
+                    <div>
+                        <strong>${product.name}</strong>
+                        <br>
+                        <small class="text-muted">${product.description || 'Nessuna descrizione'}</small>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-primary">${product.tagMarca || 'N/A'}</span>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
+                </td>
+                <td class="text-center">
+                    <span class="badge ${ratingsCount > 0 ? 'bg-success' : 'bg-warning'}">${ratingsCount}</span>
+                </td>
+                <td class="text-center">
+                    ${ratingsCount > 0 ? 
+                        `<strong class="text-warning">${averageRating}/10</strong>` : 
+                        '<span class="text-muted">-</span>'
+                    }
+                </td>
+                <td class="text-center">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="visibility-toggle-${product.id}"
+                               ${isVisible ? 'checked' : ''}>
+                        <label class="form-check-label small" for="visibility-toggle-${product.id}">
+                            ${isVisible ? 'Visibile' : 'Nascosto'}
+                        </label>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-danger btn-sm" 
+                            onclick="adminValutazioneManager.deleteProduct('${product.id}')"
+                            title="Elimina prodotto">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
+    renderStats() {
+        const totalProducts = this.products.length;
+        const visibleProducts = this.products.filter(p => p.visible !== false).length;
+        let totalRatings = 0;
+        let totalScore = 0;
+        let scoreCount = 0;
+
+        Object.values(this.ratings).forEach(productRatings => {
+            totalRatings += productRatings.length;
+            productRatings.forEach(rating => {
+                totalScore += rating.efficacia + rating.profumo + rating.facilita;
+                scoreCount += 3;
+            });
+        });
+
+        const overallAverage = scoreCount > 0 ? (totalScore / scoreCount).toFixed(1) : 0;
+
+        const totalProductsEl = document.getElementById('totalProductsCount');
+        const visibleProductsEl = document.getElementById('visibleProductsCount');
+        const totalRatingsEl = document.getElementById('totalRatingsCount');
+        const overallAverageEl = document.getElementById('overallAverageScore');
+        const lastUpdateEl = document.getElementById('lastUpdateTime');
+
+        if (totalProductsEl) totalProductsEl.textContent = totalProducts;
+        if (visibleProductsEl) visibleProductsEl.textContent = visibleProducts;
+        if (totalRatingsEl) totalRatingsEl.textContent = totalRatings;
+        if (overallAverageEl) overallAverageEl.textContent = overallAverage;
+        if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleString('it-IT');
+    }
+
+    renderProductCharts() {
+        const chartsContainer = document.getElementById('productsChartsContainer');
+        if (!chartsContainer) return;
+
+        // Pulisci container esistente
+        chartsContainer.innerHTML = '';
+
+        // Crea un grafico per ogni prodotto
+        this.products.forEach(product => {
+            const productRatings = this.ratings[product.id] || [];
+            if (productRatings.length === 0) return;
+
+            // Calcola medie per questo prodotto
+            let efficaciaSum = 0, profumoSum = 0, facilitaSum = 0;
+            productRatings.forEach(rating => {
+                efficaciaSum += rating.efficacia;
+                profumoSum += rating.profumo;
+                facilitaSum += rating.facilita;
+            });
+
+            const count = productRatings.length;
+            const efficaciaAvg = (efficaciaSum / count).toFixed(1);
+            const profumoAvg = (profumoSum / count).toFixed(1);
+            const facilitaAvg = (facilitaSum / count).toFixed(1);
+
+            // Calcola media generale per colorazione
+            const overallAvg = (parseFloat(efficaciaAvg) + parseFloat(profumoAvg) + parseFloat(facilitaAvg)) / 3;
+            
+            // Determina classe di rating
+            let ratingClass = '';
+            if (overallAvg < 4) {
+                ratingClass = 'border-danger';
+            } else if (overallAvg < 7) {
+                ratingClass = 'border-warning';
+            } else {
+                ratingClass = 'border-success';
+            }
+
+            // Crea card del grafico
+            const chartCard = document.createElement('div');
+            chartCard.className = 'col-lg-6 col-xl-4';
+            chartCard.innerHTML = `
+                <div class="card bg-secondary ${ratingClass} h-100">
+                    <div class="card-header bg-dark text-light d-flex align-items-center">
+                        <img src="${product.imageUrl}" 
+                             alt="${product.name}" class="product-image me-3" 
+                             style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
+                             onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
+                        <div>
+                            <h6 class="mb-0">${product.name}</h6>
+                            <small class="text-muted">${count} valutazioni - Media: ${overallAvg.toFixed(1)}/10</small>
+                            <div class="mt-1">
+                                <span class="badge bg-primary me-1">${product.tagMarca || 'N/A'}</span>
+                                <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
+                                ${product.visible === false ? '<span class="badge bg-warning text-dark ms-1">Nascosto</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 250px;">
+                            <canvas id="chart-${product.id}"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <h6 class="text-light">Valutazioni per dipendente:</h6>
+                            <div class="small text-muted">
+                                ${productRatings.map(r => `<div>${r.employeeName}: ${((r.efficacia + r.profumo + r.facilita) / 3).toFixed(1)}/10</div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            chartsContainer.appendChild(chartCard);
+
+            // Crea grafico
+            this.createProductChart(product.id, {
+                efficacia: parseFloat(efficaciaAvg),
+                profumo: parseFloat(profumoAvg),
+                facilita: parseFloat(facilitaAvg)
+            });
+        });
+    }
+
+    createProductChart(productId, averages) {
+        const canvas = document.getElementById(`chart-${productId}`);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        // Distruggi grafico esistente se presente
+        if (this.charts[productId]) {
+            this.charts[productId].destroy();
+        }
+
+        this.charts[productId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Efficacia', 'Profumo', 'Facilità d\'uso'],
                 datasets: [{
-                  label: clientName,
-                  data: clientData.questionsAvg,
-                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                  borderColor: 'rgba(99, 102, 241, 1)',
-                  borderWidth: 2,
-                  pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                  pointBorderColor: '#ffffff',
-                  pointBorderWidth: 2,
-                  pointRadius: 6,
+                    label: 'Media Valutazioni',
+                    data: [averages.efficacia, averages.profumo, averages.facilita],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.8)',
+                        'rgba(16, 185, 129, 0.8)', 
+                        'rgba(245, 158, 11, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(99, 102, 241, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(245, 158, 11, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false,
                 }]
-              },
-              options: {
+            },
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    backgroundColor: 'rgba(31, 41, 55, 0.9)',
-                    titleColor: '#f3f4f6',
-                    bodyColor: '#f3f4f6',
-                    borderColor: '#4b5563',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                  }
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#f1f5f9',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.y + '/10';
+                            }
+                        }
+                    }
                 },
                 scales: {
-                  r: {
-                    beginAtZero: true,
-                    max: 10,
-                    grid: {
-                      color: 'rgba(75, 85, 99, 0.3)'
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.3)'
+                        }
                     },
-                    pointLabels: {
-                      color: '#9ca3af',
-                      font: {
-                        size: 12
-                      }
-                    },
-                    ticks: {
-                      color: '#9ca3af',
-                      backdropColor: 'transparent'
+                    x: {
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.3)'
+                        }
                     }
-                  }
                 }
-              }
-            });
-          }
-        }, 100);
-      });
+            }
+        });
+    }
 
-      container.appendChild(section);
-    },
+    showSuccess(message) {
+        this.showToast(message, 'success');
+    }
 
-    // Tabella
-    renderTable() {
-      const tbody = document.getElementById('gr-body');
-      if (!tbody) return;
-      if (!this.filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Nessun feedback trovato</td></tr>';
-        return;
-      }
-      tbody.innerHTML = this.filtered.map(f => {
-        const avg = ((f.risposta1+f.risposta2+f.risposta3)/3).toFixed(1);
-        const clientName = f.nomeCliente || f.email;
-        return `
-          <tr class="fade-in">
-            <td>
-              <input type="text" class="client-name-input" value="${clientName}" 
-                     data-email="${f.email}" data-month="${f.mese}" 
-                     placeholder="Nome cliente">
-              <button class="btn-save-name" title="Salva nome">💾</button>
-            </td>
-            <td>
-              <span>${f.email}</span>
-            </td>
-            <td><span class="badge" style="background: linear-gradient(45deg, #6366f1, #8b5cf6);">${f.risposta1}</span></td>
-            <td><span class="badge" style="background: linear-gradient(45deg, #10b981, #34d399);">${f.risposta2}</span></td>
-            <td><span class="badge" style="background: linear-gradient(45deg, #f59e0b, #fbbf24);">${f.risposta3}</span></td>
-            <td><strong style="color: #60a5fa;">${avg}</strong></td>
-            <td>${window.utils.formatDate(f.dataInvio)}</td>
-            <td>
-              <span class="comment-preview" data-comment="${f.commento||''}">
-                ${f.commento ? '💬 Visualizza' : '—'}
-              </span>
-            </td>
-            <td>
-              <button class="btn-view" data-id="${f.id}">🔍</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    },
-
-    // Salva nome cliente
-    async saveClientName(button) {
-      const input = button.previousElementSibling;
-      const email = input.dataset.email;
-      const month = input.dataset.month;
-      const newName = input.value.trim();
-
-      if (!newName) {
-        alert('Inserisci un nome valido');
-        return;
-      }
-
-      this.showLoading();
-      try {
-        const result = await window.firebaseService.updateFeedbackClientName(email, newName, month);
-        if (result.success) {
-          // Aggiorna i dati locali
-          const feedback = this.data.find(f => f.email === email && f.mese === month);
-          if (feedback) {
-            feedback.nomeCliente = newName;
-          }
-          
-          // Ricarica tutto
-          await this.loadData();
-          this.renderAll();
-          
-          // Mostra messaggio di successo
-          this.showSuccess('Nome cliente aggiornato con successo!');
-        } else {
-          this.showError(result.message);
-        }
-      } catch (error) {
-        this.showError('Errore durante l\'aggiornamento del nome cliente');
-      } finally {
-        this.hideLoading();
-      }
-    },
-
-    // Mostra commento
-    showComment(comment) {
-      if (!comment.trim()) {
-        alert('Nessun commento disponibile');
-        return;
-      }
-      document.getElementById('gr-modal-text').textContent = comment;
-      new bootstrap.Modal(document.getElementById('gr-modal')).show();
-    },
-
-    // Dettagli
-    viewDetails(id) {
-      const record = this.data.find(f=>String(f.id)===id);
-      if(!record) return this.showError('Feedback non trovato');
-      
-      document.getElementById('gr-detail-id').value = record.id;
-      document.getElementById('gr-detail-email').value = record.email;
-      document.getElementById('gr-detail-client-name').value = record.nomeCliente || record.email;
-      document.getElementById('gr-detail-month').textContent = window.utils.getMonthName(record.mese);
-      document.getElementById('gr-detail-q1').textContent = record.risposta1;
-      document.getElementById('gr-detail-q2').textContent = record.risposta2;
-      document.getElementById('gr-detail-q3').textContent = record.risposta3;
-      document.getElementById('gr-detail-comment').textContent = record.commento||'—';
-      
-      new bootstrap.Modal(document.getElementById('gr-detail-modal')).show();
-    },
-
-    // Salva modifiche dal modal
-    async saveDetails() {
-      const id = document.getElementById('gr-detail-id').value;
-      const email = document.getElementById('gr-detail-email').value.trim();
-      const clientName = document.getElementById('gr-detail-client-name').value.trim();
-      
-      const record = this.data.find(f=>String(f.id)===id);
-      if(!record) return this.showError('Feedback non trovato');
-
-      let hasChanges = false;
-
-      // Aggiorna email se cambiata
-      if(email && email !== record.email){
-        // Qui dovresti implementare la logica per cambiare l'email
-        // Per ora mostriamo solo un avviso
-        this.showError('Modifica email non ancora implementata');
-        return;
-      }
-
-      // Aggiorna nome cliente se cambiato
-      if(clientName && clientName !== record.nomeCliente) {
-        this.showLoading();
-        try {
-          const result = await window.firebaseService.updateFeedbackClientName(record.email, clientName, record.mese);
-          if(result.success) {
-            record.nomeCliente = clientName;
-            hasChanges = true;
-          } else {
-            this.showError(result.message);
-            return;
-          }
-        } catch(error) {
-          this.showError('Errore durante l\'aggiornamento');
-          return;
-        } finally {
-          this.hideLoading();
-        }
-      }
-
-      if(hasChanges) {
-        await this.loadData();
-        this.renderAll();
-        this.showSuccess('Dettagli aggiornati con successo!');
-      }
-
-      bootstrap.Modal.getInstance(document.getElementById('gr-detail-modal')).hide();
-    },
-
-    // Filtri
-    applyFilters() {
-      const m = document.getElementById('gr-month').value;
-      const r = document.getElementById('gr-rating').value;
-      const e = document.getElementById('gr-email').value.trim().toLowerCase();
-      const c = document.getElementById('gr-client').value;
-      
-      this.filtered = this.data.filter(f => {
-        const avg = (f.risposta1+f.risposta2+f.risposta3)/3;
-        const clientName = f.nomeCliente || f.email;
-        
-        if(m !== 'all' && f.mese !== m) return false;
-        if(c !== 'all' && clientName !== c) return false;
-        if((r === 'high' && avg < 8) || (r === 'medium' && (avg < 5 || avg >= 8)) || (r === 'low' && avg >= 5)) return false;
-        if(e && !f.email.toLowerCase().includes(e) && !clientName.toLowerCase().includes(e)) return false;
-        
-        return true;
-      });
-      this.renderAll();
-    },
-
-    // Loading & error & success
-    showLoading() {
-      const overlay = document.getElementById('loading-overlay');
-      if (overlay) {
-        overlay.style.display = 'flex';
-      }
-    },
-    
-    hideLoading() {
-      const overlay = document.getElementById('loading-overlay');
-      if (overlay) {
-        overlay.style.display = 'none';
-      }
-    },
-    
-    showError(msg) {
-      // Crea toast di errore
-      this.showToast(msg, 'error');
-    },
-    
-    showSuccess(msg) {
-      // Crea toast di successo
-      this.showToast(msg, 'success');
-    },
+    showError(message) {
+        this.showToast(message, 'error');
+    }
     
     showToast(message, type = 'info') {
-      const toast = document.createElement('div');
-      toast.className = `toast-notification toast-${type}`;
-      toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        animation: slideInRight 0.3s ease-out;
-        max-width: 300px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      `;
-      
-      if (type === 'error') {
-        toast.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
-      } else if (type === 'success') {
-        toast.style.background = 'linear-gradient(45deg, #10b981, #059669)';
-      } else {
-        toast.style.background = 'linear-gradient(45deg, #6366f1, #4f46e5)';
-        this.charts.bar = null;
-        this.charts.line = null;
-      }
-      
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.style.animation = 'slideOutRight 0.3s ease-in';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-  };
-
-  // Funzione di cleanup globale
-  window.cleanupGradimento = function() {
-    if (window.Gradimento && window.Gradimento.charts) {
-      Object.values(window.Gradimento.charts).forEach(chart => {
-        if (chart && typeof chart.destroy === 'function') {
-          chart.destroy();
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        
+        if (type === 'error') {
+            toast.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+        } else if (type === 'success') {
+            toast.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+        } else {
+            toast.style.background = 'linear-gradient(45deg, #6366f1, #4f46e5)';
         }
-      });
-      Object.values(window.Gradimento.clientCharts).forEach(chart => {
-        if (chart && typeof chart.destroy === 'function') {
-          chart.destroy();
-        }
-      });
+        
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
-    window.gradimentoInitialized = false;
-  };
+}
 
-  // Aggiungi stili per le animazioni dei toast
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes slideInRight {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(100%); opacity: 0; }
-    }
-  `;
-  document.head.appendChild(style);
+// Istanza globale
+window.adminValutazioneManager = new AdminValutazioneManager();
 
-  // Esporta per uso globale
-  window.Gradimento = Gradimento;
+// Inizializza quando la tab viene attivata
+document.addEventListener('DOMContentLoaded', () => {
+    const valutazioneTab = document.getElementById('valutazione-tab');
+    let valutazioneManager = null;
 
-  // Inizializza solo se il DOM è pronto e non è già inizializzato
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      if (!window.gradimentoInitialized) {
-        Gradimento.init();
-      }
-    });
-  } else {
-    if (!window.gradimentoInitialized) {
-      Gradimento.init();
+    if (valutazioneTab) {
+        valutazioneTab.addEventListener('shown.bs.tab', async () => {
+            if (!valutazioneManager) {
+                valutazioneManager = window.adminValutazioneManager;
+                await valutazioneManager.init();
+            }
+        });
     }
-  }
-})();
+});
+
+export { AdminValutazioneManager };
