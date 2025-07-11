@@ -350,12 +350,21 @@ class AdminValutazioneManager {
         // Costruisci il percorso corretto dell'immagine
         const finalImageFileName = formData.get('productImage') || (this.editingProduct ? this.editingProduct.imageUrl.split('/').pop() : 'default.jpg');
         
+        // Determina il percorso corretto in base alla posizione della pagina
+        let imagePath;
+        if (window.location.pathname.includes('/pages/')) {
+            // Siamo in una sottocartella, usa percorso relativo
+            imagePath = `../assets/img/products/${finalImageFileName.trim()}`;
+        } else {
+            // Siamo nella root, usa percorso diretto
+            imagePath = `assets/img/products/${finalImageFileName.trim()}`;
+        }
+        
         const productData = {
             id: productId,
             name: formData.get('productName').trim(),
             description: formData.get('productDescription').trim(),
-            // FIX: Percorso corretto senza "pages/"
-            imageUrl: `assets/img/products/${finalImageFileName.trim()}`,
+            imageUrl: imagePath,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
             visible: this.editingProduct ? this.editingProduct.visible : true,
@@ -387,7 +396,17 @@ class AdminValutazioneManager {
             
             // Chiudi modal e reset form
             const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
-            modal.hide();
+            if (modal) {
+                modal.hide();
+                // Forza rimozione backdrop
+                setTimeout(() => {
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(backdrop => backdrop.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }, 300);
+            }
             this.resetModal();
             
             // Ricarica dati
@@ -637,16 +656,16 @@ class AdminValutazioneManager {
                     </div>
                 </td>
                 <td class="text-center">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-warning btn-sm" 
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button class="btn btn-warning btn-sm px-2 py-1" 
                                 onclick="adminValutazioneManager.openEditModal(${JSON.stringify(product).replace(/"/g, '&quot;')})"
                                 title="Modifica prodotto">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit me-1"></i>Modifica
                         </button>
-                        <button class="btn btn-danger btn-sm" 
+                        <button class="btn btn-danger btn-sm px-2 py-1" 
                                 onclick="adminValutazioneManager.deleteProduct('${product.id}')"
                                 title="Elimina prodotto">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash me-1"></i>Elimina
                         </button>
                     </div>
                 </td>
@@ -741,11 +760,16 @@ class AdminValutazioneManager {
                                 ${product.visible === false ? '<span class="badge bg-warning text-dark ms-1">Nascosto</span>' : ''}
                             </div>
                         </div>
-                        <div class="ms-2">
-                            <button class="btn btn-warning btn-sm" 
+                        <div class="ms-2 d-flex flex-column gap-1">
+                            <button class="btn btn-warning btn-sm px-2 py-1" 
                                     onclick="adminValutazioneManager.openEditModal(${JSON.stringify(product).replace(/"/g, '&quot;')})"
                                     title="Modifica prodotto">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-edit me-1"></i>Modifica
+                            </button>
+                            <button class="btn btn-danger btn-sm px-2 py-1" 
+                                    onclick="adminValutazioneManager.deleteProduct('${product.id}')"
+                                    title="Elimina prodotto">
+                                <i class="fas fa-trash me-1"></i>Elimina
                             </button>
                         </div>
                     </div>
