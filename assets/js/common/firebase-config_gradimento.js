@@ -29,7 +29,7 @@ let app, db;
 try {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    console.log('Firebase inizializzato correttamente');
+    console.log('Firebase Gradimento inizializzato correttamente');
 } catch (error) {
     console.error('Errore nell\'inizializzazione di Firebase:', error);
 }
