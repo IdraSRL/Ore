@@ -42,6 +42,28 @@ class AdminValutazioneManager {
             saveProductBtn.addEventListener('click', () => this.handleAddProduct());
         }
 
+        // Preview immagine
+        const imageFileInput = document.getElementById('productImageFile');
+        if (imageFileInput) {
+            imageFileInput.addEventListener('change', (e) => this.handleImagePreview(e));
+        }
+
+        // Auto-genera ID prodotto dal nome
+        const productNameInput = document.getElementById('productName');
+        const productIdInput = document.getElementById('productId');
+        if (productNameInput && productIdInput) {
+            productNameInput.addEventListener('input', (e) => {
+                if (!productIdInput.value) {
+                    const autoId = e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s]/g, '')
+                        .replace(/\s+/g, '-')
+                        .substring(0, 30);
+                    productIdInput.value = autoId;
+                }
+            });
+        }
+
         // Toggle view buttons
         const dashboardBtn = document.getElementById('viewDashboardBtn');
         const productsBtn = document.getElementById('viewProductsBtn');
@@ -201,6 +223,46 @@ class AdminValutazioneManager {
             console.log('Valutazioni caricate per admin dashboard:', Object.keys(this.ratings).length);
         } catch (error) {
             console.error('Errore nel caricamento valutazioni:', error);
+        }
+    }
+
+    handleImagePreview(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (file) {
+            // Verifica tipo file
+            if (!file.type.startsWith('image/')) {
+                this.showError('Seleziona un file immagine valido');
+                event.target.value = '';
+                preview.style.display = 'none';
+                return;
+            }
+            
+            // Verifica dimensione (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                this.showError('L\'immagine è troppo grande. Massimo 5MB consentiti.');
+                event.target.value = '';
+                preview.style.display = 'none';
+                return;
+            }
+            
+            // Mostra anteprima
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Pulisci il campo nome file manuale
+            const manualInput = document.getElementById('productImage');
+            if (manualInput) {
+                manualInput.value = '';
+            }
+        } else {
+            preview.style.display = 'none';
         }
     }
 

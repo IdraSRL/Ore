@@ -1,0 +1,22 @@
+RewriteEngine On
+
+# Consenti accesso ai file PHP
+<Files "*.php">
+    Order allow,deny
+    Allow from all
+</Files>
+
+# Headers per CORS
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, DELETE, PUT"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Gestisci richieste OPTIONS
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
+# Sicurezza: impedisci accesso a file sensibili
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql|conf)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
