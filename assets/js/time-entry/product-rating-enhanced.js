@@ -119,7 +119,7 @@ class ProductRatingManagerEnhanced {
     debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
-            // FIX: Percorso corretto delle immagini
+            const later = () => {
                 clearTimeout(timeout);
                 func(...args);
             };
