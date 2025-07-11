@@ -541,12 +541,25 @@
                         id="productDescription" name="productDescription" rows="2" required
                         placeholder="Breve descrizione del prodotto"></textarea>
             </div>
-            <div class="col-md-4">
-              <label for="productImage" class="form-label">Nome File Immagine</label>
-              <input type="text" class="form-control bg-secondary text-light border-0" 
-                     id="productImage" name="productImage" required 
-                     placeholder="es: detergente.jpg">
-              <small class="text-muted">Caricare manualmente in assets/img/products/</small>
+            <div class="col-12">
+              <label class="form-label">Immagine Prodotto</label>
+              <div class="row g-2">
+                <div class="col-md-8">
+                  <input type="file" class="form-control bg-secondary text-light border-0" 
+                         id="productImageFile" name="productImageFile" 
+                         accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                  <small class="text-muted">Carica una nuova immagine (JPG, PNG, GIF, WebP - max 5MB)</small>
+                </div>
+                <div class="col-md-4">
+                  <input type="text" class="form-control bg-secondary text-light border-0" 
+                         id="productImage" name="productImage" 
+                         placeholder="o inserisci nome file esistente">
+                  <small class="text-muted">Nome file esistente (opzionale)</small>
+                </div>
+              </div>
+              <div id="imagePreview" class="mt-2" style="display: none;">
+                <img id="previewImg" src="" alt="Anteprima" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
+              </div>
             </div>
             <div class="col-md-4">
               <label for="productMarca" class="form-label">Marca</label>

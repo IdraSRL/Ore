@@ -208,11 +208,35 @@ class AdminValutazioneManager {
         const form = document.getElementById('addProductForm');
         const formData = new FormData(form);
         
+        // Verifica se è stata selezionata un'immagine per l'upload
+        const imageFile = formData.get('productImageFile');
+        const imageFileName = formData.get('productImage');
+        
+        if (imageFile && imageFile.size > 0) {
+            // Upload dell'immagine
+            try {
+                const uploadResult = await this.uploadProductImage(imageFile, formData.get('productId'));
+                if (!uploadResult.success) {
+                    this.showError(uploadResult.message);
+                    return;
+                }
+                // Usa il nome file restituito dall'upload
+                formData.set('productImage', uploadResult.fileName);
+            } catch (error) {
+                console.error('Errore upload immagine:', error);
+                this.showError('Errore durante il caricamento dell\'immagine');
+                return;
+            }
+        } else if (!imageFileName) {
+            this.showError('Seleziona un\'immagine o inserisci il nome del file');
+            return;
+        }
+        
         const productData = {
             id: formData.get('productId').trim(),
             name: formData.get('productName').trim(),
             description: formData.get('productDescription').trim(),
-            imageUrl: `https://www.artigea.it/TestOre/assets/img/products/${formData.get('productImage').trim()}`,
+            imageUrl: `assets/img/products/${formData.get('productImage').trim()}`,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
             visible: true, // Default visibile
@@ -254,6 +278,31 @@ class AdminValutazioneManager {
         }
     }
 
+    async uploadProductImage(file, productId) {
+        const formData = new FormData();
+        formData.append('productImage', file);
+        formData.append('productId', productId);
+
+        try {
+            const response = await fetch('api/upload-product-image.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            console.error('Errore nella richiesta di upload:', error);
+            return {
+                success: false,
+                message: 'Errore di connessione durante il caricamento dell\'immagine'
+            };
+        }
+    }
     async deleteProduct(productId) {
         if (!confirm('Sei sicuro di voler eliminare questo prodotto?')) return;
 
