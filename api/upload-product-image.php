@@ -152,7 +152,7 @@ if (move_uploaded_file($file['tmp_name'], $filePath)) {
         'success' => true, 
         'message' => 'Immagine caricata con successo',
         'fileName' => $fileName,
-        'filePath' => 'assets/img/products/' . $fileName,
+        'filePath' => '../assets/img/products/' . $fileName,
         'optimized' => $optimized
     ];
     

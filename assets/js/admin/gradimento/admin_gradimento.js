@@ -302,7 +302,7 @@ class AdminValutazioneManager {
             id: formData.get('productId').trim(),
             name: formData.get('productName').trim(),
             description: formData.get('productDescription').trim(),
-            imageUrl: `assets/img/products/${(formData.get('productImage') || 'default.jpg').trim()}`,
+            imageUrl: `../assets/img/products/${(formData.get('productImage') || 'default.jpg').trim()}`,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
             visible: true, // Default visibile

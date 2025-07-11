@@ -357,7 +357,7 @@ class AdminValutazioneManager {
             imagePath = `../assets/img/products/${finalImageFileName.trim()}`;
         } else {
             // Siamo nella root, usa percorso diretto
-            imagePath = `assets/img/products/${finalImageFileName.trim()}`;
+            imagePath = `../assets/img/products/${finalImageFileName.trim()}`;
         }
         
         const productData = {
