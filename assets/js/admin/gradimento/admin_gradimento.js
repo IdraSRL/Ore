@@ -17,14 +17,23 @@
     filtered: [],
     charts: {},
     clientCharts: {},
+    isInitialized: false,
 
     // Initialize
     async init() {
+      // Previeni inizializzazioni multiple
+      if (this.isInitialized) {
+        console.log('Gradimento già inizializzato, skip...');
+        return;
+      }
+      
       this.showLoading();
       await this.loadData();
       this.hideLoading();
       this.bindUI();
       this.renderAll();
+      this.isInitialized = true;
+      
       // Auto-refresh ogni 5 minuti
       setInterval(async () => {
         await this.loadData();

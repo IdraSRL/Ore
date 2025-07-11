@@ -57,7 +57,12 @@
   function addVersionParam(url) {
     try {
       const u = new URL(url, location.href);
+      // Non versionare risorse CDN esterne
       if (u.origin !== location.origin) return url;
+      // Non versionare se l'URL è già assoluto e punta al nostro dominio
+      if (url.startsWith('http') && u.origin === location.origin) {
+        return url; // Mantieni l'URL originale se già assoluto
+      }
       return u.pathname + `?v=${APP_VERSION}`;
     } catch {
       return url;
@@ -99,8 +104,11 @@
   function bustOther() {
     document.querySelectorAll('iframe[src], img[src]').forEach(el => {
       const src = el.getAttribute('src').split('?')[0];
-      el.src = addVersionParam(src);
-      console.log(`🖼️ Risorsa: ${src} → ${el.src}`);
+      // Solo se è una risorsa relativa
+      if (!src.startsWith('http') && src.trim()) {
+        el.src = addVersionParam(src);
+        console.log(`🖼️ Risorsa: ${src} → ${el.src}`);
+      }
     });
   }
 

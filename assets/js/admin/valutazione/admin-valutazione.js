@@ -21,7 +21,10 @@ class AdminValutazioneManager {
     }
 
     async init() {
-        if (this.isInitialized) return;
+        if (this.isInitialized) {
+            console.log('AdminValutazioneManager già inizializzato, skip...');
+            return;
+        }
         
         console.log('Inizializzazione Admin Valutazione Prodotti...');
         this.setupEventListeners();
@@ -279,6 +282,7 @@ class AdminValutazioneManager {
             try {
                 const uploadResult = await this.uploadProductImage(imageFile, formData.get('productId'));
                 if (!uploadResult.success) {
+                    // Se l'upload fallisce, chiedi di usare il campo manuale
                     this.showError(uploadResult.message);
                     return;
                 }
@@ -286,11 +290,11 @@ class AdminValutazioneManager {
                 formData.set('productImage', uploadResult.fileName);
             } catch (error) {
                 console.error('Errore upload immagine:', error);
-                this.showError('Errore durante il caricamento dell\'immagine');
+                this.showError('Errore durante il caricamento dell\'immagine. Usa il campo nome file manuale.');
                 return;
             }
         } else if (!imageFileName) {
-            this.showError('Seleziona un\'immagine o inserisci il nome del file');
+            this.showError('Seleziona un\'immagine da caricare o inserisci il nome di un file esistente');
             return;
         }
         
@@ -298,7 +302,7 @@ class AdminValutazioneManager {
             id: formData.get('productId').trim(),
             name: formData.get('productName').trim(),
             description: formData.get('productDescription').trim(),
-            imageUrl: `assets/img/products/${formData.get('productImage').trim()}`,
+            imageUrl: `assets/img/products/${(formData.get('productImage') || 'default.jpg').trim()}`,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
             visible: true, // Default visibile
@@ -327,6 +331,10 @@ class AdminValutazioneManager {
             modal.hide();
             form.reset();
             
+            // Reset preview immagine
+            const preview = document.getElementById('imagePreview');
+            if (preview) preview.style.display = 'none';
+            
             // Ricarica dati
             await this.loadData();
             if (this.currentView === 'dashboard') {
@@ -341,6 +349,25 @@ class AdminValutazioneManager {
     }
 
     async uploadProductImage(file, productId) {
+        // Verifica se il file API esiste prima di tentare l'upload
+        try {
+            const testResponse = await fetch('api/upload-product-image.php', {
+                method: 'HEAD'
+            });
+            
+            if (!testResponse.ok) {
+                return {
+                    success: false,
+                    message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
+                };
+            }
+        } catch (error) {
+            return {
+                success: false,
+                message: 'Servizio di upload immagini non disponibile. Usa il campo nome file manuale.'
+            };
+        }
+        
         const formData = new FormData();
         formData.append('productImage', file);
         formData.append('productId', productId);
@@ -361,7 +388,7 @@ class AdminValutazioneManager {
             console.error('Errore nella richiesta di upload:', error);
             return {
                 success: false,
-                message: 'Errore di connessione durante il caricamento dell\'immagine'
+                message: 'Errore di connessione durante il caricamento dell\'immagine. Usa il campo nome file manuale.'
             };
         }
     }
