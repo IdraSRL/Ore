@@ -535,7 +535,7 @@ class AdminValutazioneManager {
                     <button class="btn btn-danger btn-sm" 
                             onclick="adminValutazioneManager.deleteProduct('${product.id}')"
                             title="Elimina prodotto">
-                        <i class="fas fa-trash"></i>
+                        <i class="fas fa-trash">ELIMINA</i>
                     </button>
                 </td>
             </tr>
@@ -628,10 +628,7 @@ class AdminValutazioneManager {
                                 <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
                                 ${product.visible === false ? '<span class="badge bg-warning text-dark ms-1">Nascosto</span>' : ''}
                             </div>
-                        </div>
-                        <button class="btn btn-danger btn-sm ms-auto" onclick="adminValutazioneManager.deleteProduct('${product.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        </div>ì
                     </div>
                     <div class="card-body">
                         <div style="height: 250px;">

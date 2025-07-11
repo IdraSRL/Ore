@@ -322,6 +322,11 @@ body {
     color: var(--white);
 }
 
+.btn-lista{
+  color: #000000;
+  background-color: #f59e0b;
+}
+
 .irene {
     background-color: #960505;
 }
