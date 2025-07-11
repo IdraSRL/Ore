@@ -9,7 +9,7 @@ import {
   deleteDoc,
   updateDoc,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+} from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
 
 class AdminValutazioneManager {
     constructor() {
@@ -18,6 +18,7 @@ class AdminValutazioneManager {
         this.charts = {};
         this.isInitialized = false;
         this.currentView = 'dashboard'; // 'dashboard' | 'products'
+        this.editingProduct = null; // Per tracciare il prodotto in modifica
     }
 
     async init() {
@@ -56,7 +57,7 @@ class AdminValutazioneManager {
         const productIdInput = document.getElementById('productId');
         if (productNameInput && productIdInput) {
             productNameInput.addEventListener('input', (e) => {
-                if (!productIdInput.value) {
+                if (!productIdInput.value || !this.editingProduct) {
                     const autoId = e.target.value
                         .toLowerCase()
                         .replace(/[^a-z0-9\s]/g, '')
@@ -269,6 +270,53 @@ class AdminValutazioneManager {
         }
     }
 
+    // Nuova funzione per aprire il modal in modalità modifica
+    openEditModal(product) {
+        this.editingProduct = product;
+        
+        // Popola i campi del form con i dati del prodotto
+        document.getElementById('productId').value = product.id;
+        document.getElementById('productName').value = product.name || '';
+        document.getElementById('productDescription').value = product.description || '';
+        document.getElementById('productMarca').value = product.tagMarca || '';
+        document.getElementById('productTipo').value = product.tagTipo || '';
+        
+        // Estrai il nome del file dall'URL dell'immagine
+        const imageFileName = product.imageUrl ? product.imageUrl.split('/').pop() : '';
+        document.getElementById('productImage').value = imageFileName;
+        
+        // Disabilita il campo ID in modalità modifica
+        document.getElementById('productId').disabled = true;
+        
+        // Cambia il titolo del modal
+        document.getElementById('addProductModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Modifica Prodotto';
+        
+        // Cambia il testo del pulsante
+        document.getElementById('saveProductBtn').innerHTML = '<i class="fas fa-save me-1"></i>Aggiorna Prodotto';
+        
+        // Mostra il modal
+        new bootstrap.Modal(document.getElementById('addProductModal')).show();
+    }
+
+    // Reset del modal per nuovi prodotti
+    resetModal() {
+        this.editingProduct = null;
+        
+        // Reset form
+        document.getElementById('addProductForm').reset();
+        
+        // Riabilita il campo ID
+        document.getElementById('productId').disabled = false;
+        
+        // Reset titolo e pulsante
+        document.getElementById('addProductModalLabel').innerHTML = '<i class="fas fa-plus me-2"></i>Aggiungi Nuovo Prodotto';
+        document.getElementById('saveProductBtn').innerHTML = '<i class="fas fa-save me-1"></i>Salva Prodotto';
+        
+        // Nascondi preview
+        const preview = document.getElementById('imagePreview');
+        if (preview) preview.style.display = 'none';
+    }
+
     async handleAddProduct() {
         const form = document.getElementById('addProductForm');
         const formData = new FormData(form);
@@ -277,12 +325,13 @@ class AdminValutazioneManager {
         const imageFile = formData.get('productImageFile');
         const imageFileName = formData.get('productImage');
         
+        const productId = formData.get('productId').trim();
+        
         if (imageFile && imageFile.size > 0) {
             // Upload dell'immagine
             try {
-                const uploadResult = await this.uploadProductImage(imageFile, formData.get('productId'));
+                const uploadResult = await this.uploadProductImage(imageFile, productId);
                 if (!uploadResult.success) {
-                    // Se l'upload fallisce, chiedi di usare il campo manuale
                     this.showError(uploadResult.message);
                     return;
                 }
@@ -293,47 +342,53 @@ class AdminValutazioneManager {
                 this.showError('Errore durante il caricamento dell\'immagine. Usa il campo nome file manuale.');
                 return;
             }
-        } else if (!imageFileName) {
+        } else if (!imageFileName && !this.editingProduct) {
             this.showError('Seleziona un\'immagine da caricare o inserisci il nome di un file esistente');
             return;
         }
         
+        // Costruisci il percorso corretto dell'immagine
+        const finalImageFileName = formData.get('productImage') || (this.editingProduct ? this.editingProduct.imageUrl.split('/').pop() : 'default.jpg');
+        
         const productData = {
-            id: formData.get('productId').trim(),
+            id: productId,
             name: formData.get('productName').trim(),
             description: formData.get('productDescription').trim(),
-            imageUrl: `assets/img/products/${(formData.get('productImage') || 'default.jpg').trim()}`,
+            // FIX: Percorso corretto senza "pages/"
+            imageUrl: `assets/img/products/${finalImageFileName.trim()}`,
             tagMarca: formData.get('productMarca').trim(),
             tagTipo: formData.get('productTipo').trim(),
-            visible: true, // Default visibile
-            createdAt: serverTimestamp(),
+            visible: this.editingProduct ? this.editingProduct.visible : true,
             updatedAt: serverTimestamp()
         };
 
+        // Se è un nuovo prodotto, aggiungi createdAt
+        if (!this.editingProduct) {
+            productData.createdAt = serverTimestamp();
+        }
+
         // Validazione
-        if (!productData.id || !productData.name || !productData.imageUrl || !productData.tagMarca || !productData.tagTipo) {
+        if (!productData.id || !productData.name || !productData.tagMarca || !productData.tagTipo) {
             this.showError('Tutti i campi sono obbligatori');
             return;
         }
 
-        // Verifica se l'ID esiste già
-        if (this.products.find(p => p.id === productData.id)) {
+        // Verifica se l'ID esiste già (solo per nuovi prodotti)
+        if (!this.editingProduct && this.products.find(p => p.id === productData.id)) {
             this.showError('Un prodotto con questo ID esiste già');
             return;
         }
 
         try {
             await setDoc(doc(db, 'Products', productData.id), productData);
-            this.showSuccess('Prodotto aggiunto con successo!');
+            
+            const action = this.editingProduct ? 'aggiornato' : 'aggiunto';
+            this.showSuccess(`Prodotto ${action} con successo!`);
             
             // Chiudi modal e reset form
             const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
             modal.hide();
-            form.reset();
-            
-            // Reset preview immagine
-            const preview = document.getElementById('imagePreview');
-            if (preview) preview.style.display = 'none';
+            this.resetModal();
             
             // Ricarica dati
             await this.loadData();
@@ -361,7 +416,6 @@ class AdminValutazioneManager {
         }
         
         console.log('🌐 Percorso API determinato:', apiPath);
-        console.log('📍 URL completo:', window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/') + apiPath);
         
         const formData = new FormData();
         formData.append('productImage', file);
@@ -379,7 +433,6 @@ class AdminValutazioneManager {
             });
 
             console.log('📨 Risposta ricevuta - Status:', response.status, 'OK:', response.ok);
-            console.log('📋 Headers risposta:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
                 console.error('❌ Risposta HTTP non OK:', response.status, response.statusText);
@@ -395,14 +448,12 @@ class AdminValutazioneManager {
                 console.log('✅ JSON parsato con successo:', result);
             } catch (parseError) {
                 console.error('❌ Errore parsing JSON:', parseError);
-                console.log('📄 Contenuto che ha causato errore:', responseText);
                 throw new Error('Risposta del server non è JSON valido');
             }
             
             return result;
         } catch (error) {
             console.error('❌ Errore nella richiesta di upload:', error);
-            console.log('🔧 Stack trace:', error.stack);
             
             // Se l'errore è di rete, potrebbe essere un problema di configurazione server
             if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
@@ -418,6 +469,7 @@ class AdminValutazioneManager {
             };
         }
     }
+
     async deleteProduct(productId) {
         if (!confirm('Sei sicuro di voler eliminare questo prodotto?')) return;
 
@@ -505,7 +557,7 @@ class AdminValutazioneManager {
                             <th>Valutazioni</th>
                             <th>Media</th>
                             <th style="width: 120px;">Visibilità</th>
-                            <th style="width: 100px;">Azioni</th>
+                            <th style="width: 140px;">Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -585,11 +637,18 @@ class AdminValutazioneManager {
                     </div>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-danger btn-sm" 
-                            onclick="adminValutazioneManager.deleteProduct('${product.id}')"
-                            title="Elimina prodotto">
-                        <i class="fas fa-trash">ELIMINA</i>
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-warning btn-sm" 
+                                onclick="adminValutazioneManager.openEditModal(${JSON.stringify(product).replace(/"/g, '&quot;')})"
+                                title="Modifica prodotto">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" 
+                                onclick="adminValutazioneManager.deleteProduct('${product.id}')"
+                                title="Elimina prodotto">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -673,7 +732,7 @@ class AdminValutazioneManager {
                              alt="${product.name}" class="product-image me-3" 
                              style="width: 50px; height: 50px; border-radius: 8px; cursor: pointer;"
                              onerror="this.src='https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=60'">
-                        <div>
+                        <div class="flex-grow-1">
                             <h6 class="mb-0">${product.name}</h6>
                             <small class="text-muted">${count} valutazioni - Media: ${overallAvg.toFixed(1)}/10</small>
                             <div class="mt-1">
@@ -681,7 +740,14 @@ class AdminValutazioneManager {
                                 <span class="badge bg-secondary">${product.tagTipo || 'N/A'}</span>
                                 ${product.visible === false ? '<span class="badge bg-warning text-dark ms-1">Nascosto</span>' : ''}
                             </div>
-                        </div>ì
+                        </div>
+                        <div class="ms-2">
+                            <button class="btn btn-warning btn-sm" 
+                                    onclick="adminValutazioneManager.openEditModal(${JSON.stringify(product).replace(/"/g, '&quot;')})"
+                                    title="Modifica prodotto">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div style="height: 250px;">
@@ -842,6 +908,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!valutazioneManager) {
                 valutazioneManager = window.adminValutazioneManager;
                 await valutazioneManager.init();
+            }
+        });
+    }
+
+    // Reset del modal quando viene chiuso
+    const addProductModal = document.getElementById('addProductModal');
+    if (addProductModal) {
+        addProductModal.addEventListener('hidden.bs.modal', () => {
+            if (window.adminValutazioneManager) {
+                window.adminValutazioneManager.resetModal();
             }
         });
     }

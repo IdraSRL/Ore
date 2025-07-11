@@ -113,13 +113,13 @@ class ProductRatingManagerEnhanced {
 
         // Reset filtri
         const resetBtn = document.getElementById('resetFiltersUser');
-        if (resetBtn) resetBtn.addEventListener('click', () => this.resetFilters());
+        const finalImageFileName = formData.get('productImage') || 'default.jpg';
     }
 
     debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
-            const later = () => {
+            // FIX: Percorso corretto delle immagini
                 clearTimeout(timeout);
                 func(...args);
             };
