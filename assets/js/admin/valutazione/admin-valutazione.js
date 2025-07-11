@@ -348,16 +348,19 @@ class AdminValutazioneManager {
         }
         
         // Costruisci il percorso corretto dell'immagine
-        const finalImageFileName = formData.get('productImage') || (this.editingProduct && this.editingProduct.imageUrl ? this.editingProduct.imageUrl.split('/').pop() : 'default.jpg');
+        const finalImageFileName = formData.get('productImage') || 
+            (this.editingProduct && this.editingProduct.imageUrl ? 
+                this.editingProduct.imageUrl.split('/').pop() : 
+                'default.jpg');
         
         // Determina il percorso corretto in base alla posizione della pagina
         let imagePath;
         if (window.location.pathname.includes('/pages/')) {
             // Siamo in una sottocartella, usa percorso relativo
-            imagePath = `../assets/img/products/${finalImageFileName.trim()}`;
+            imagePath = `../assets/img/products/${(finalImageFileName || 'default.jpg').trim()}`;
         } else {
             // Siamo nella root, usa percorso diretto
-            imagePath = `../assets/img/products/${finalImageFileName.trim()}`;
+            imagePath = `../assets/img/products/${(finalImageFileName || 'default.jpg').trim()}`;
         }
         
         const productData = {
