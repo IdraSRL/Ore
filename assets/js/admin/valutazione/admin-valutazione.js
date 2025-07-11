@@ -348,7 +348,7 @@ class AdminValutazioneManager {
         }
         
         // Costruisci il percorso corretto dell'immagine
-        const finalImageFileName = formData.get('productImage') || (this.editingProduct ? this.editingProduct.imageUrl.split('/').pop() : 'default.jpg');
+        const finalImageFileName = formData.get('productImage') || (this.editingProduct && this.editingProduct.imageUrl ? this.editingProduct.imageUrl.split('/').pop() : 'default.jpg');
         
         // Determina il percorso corretto in base alla posizione della pagina
         let imagePath;
